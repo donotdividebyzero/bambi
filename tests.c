@@ -13,14 +13,13 @@
 #define EXPECTED "---EXPECTED---"
 
 struct Test {
-	const char *test_filepath;
+	char *test_filepath;
 	char *source;
 	char *expected;
 	struct Test *next;
 };
 
 struct Test *make_test(const char *);
-
 struct Test *read_file(const char *);
 
 int main(int argc, char **argv) {
@@ -46,13 +45,13 @@ struct Test *read_file(const char *filepath)
     int is_directory = S_ISDIR(path_stat.st_mode);
 
     if (is_directory) {
-        DIR* FD;
-        struct dirent* in_file;
+        DIR *FD;
+        struct dirent *in_file;
         struct Test *testsuite = NULL;
         struct Test *testsuite_head = NULL;
         if (NULL == (FD = opendir (filepath)))
         {
-            fprintf(stderr, "Error : Failed to open input directory - %s\n", strerror(errno));
+            fprintf(stderr, "Error : Failed to open directory '%s' - %s\n", filepath, strerror(errno));
             return NULL;
         }
        
@@ -65,9 +64,9 @@ struct Test *read_file(const char *filepath)
             if (!strcmp (in_file->d_name, "..")) {
                 continue;
             }
-            char* file = (char*)malloc(
-                sizeof(char)*strlen(in_file->d_name) + strlen(filepath) + 1
-            );
+
+            int name_length = sizeof(char)*(strlen(in_file->d_name) + strlen(filepath) + 1);
+            char *file = (char*)malloc(name_length);
             strcat(file, filepath);
             strcat(file, "/");
             strcat(file, in_file->d_name);
@@ -137,9 +136,10 @@ struct Test *make_test(const char *filepath)
 	
 	test->source = (char *)malloc(sizeof(char) * strlen(test_source_content));
 	test->expected = (char *)malloc(sizeof(char) * strlen(test_expected_content));
+        test->test_filepath = (char *)malloc(sizeof(char) * strlen(filepath));
 	test->next = NULL;
-	test->test_filepath = filepath;
 
+        strncpy(test->test_filepath, filepath, strlen(filepath));
 	strncpy(test->source, test_source_content, strlen(test_source_content));
 	strncpy(test->expected, test_expected_content, strlen(test_expected_content));
 
