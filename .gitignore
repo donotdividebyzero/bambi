@@ -1,6 +1,7 @@
 *.swp
+/.idea
+/.vscode
 .DS_Store
 /src/.DS_Store
-vltool
-test_runner
-/vl
+brumbrum
+compiler

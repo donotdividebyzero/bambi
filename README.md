@@ -1,23 +1,23 @@
-#### To start please build first a ./vltool
-
+#### To start please build first a brumbrum
 ```Bash
-gcc build.c -o vltool
+gcc build.c ./src/thread.c -o compiler
 ```
-
-
+#This command will build compiler for brumbrum
+```Bash
+./compiler
+```
 ---
 
-### Possible commands in vltool
+### Possible commands in brumbrum
 ```Bash
 Usage:
   Available subcommands:
-    ./vltool help  - Usage, description
-    ./vltool tests - Command that build and run test suite
-    ./vltool vm    - Build VL VM
-    ./vltool tools - Re-build vltool
+    ./brumbrum help     - Usage, description
+    ./brumbrum tests    - Command that build and run test suite
+    ./brumbrum runtime  - Brumbrum runtime
 ```
 
 
 ### @TODO
 1. Implement VM ;)
-2. Test runner need to do some asserts and printing some valuable information about test runned
+2. Test runner need to do some asserts and printing some valuable information about test executed

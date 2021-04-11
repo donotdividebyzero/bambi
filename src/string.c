@@ -1,5 +1,6 @@
-#ifndef __STRING_H
-#define __STRING_H
+#include "string.h"
+#include <string.h>
+#include <stdlib.h>
 
 char *ltrim(char *str, const char *seps)
 {
@@ -38,6 +39,3 @@ char *trim(char *str, const char *seps)
 {
     return ltrim(rtrim(str, seps), seps);
 }
-#endif
-
-
