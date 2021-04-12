@@ -1,12 +1,12 @@
-#ifndef __TOKEN_STREAM
-#define __TOKEN_STREAM
+#ifndef __TOKEN_H
+#define __TOKEN_H
 
-struct VM;
+#include <stdio.h>
 
 enum TokenType {
       // Single-character tokens.
   LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
-  COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR,
+  COMMA, DOT, MINUS, PLUS, SEMICOLON, COLON, SLASH, STAR,
 
   // One or two character tokens.
   ASSIGN,
@@ -29,17 +29,17 @@ enum TokenType {
 
 typedef struct Token_Metadata {
     int line;
-    int line_start_position;
-    int stream_start_position;
-    int stream_end_position;
+    int line_position;
 } Token_Metadata;
 
 typedef struct Token {
     enum TokenType type;
-    char * value;
-    Token_Metadata meta_data;
+    char *value;
+    Token_Metadata *meta_data;
 
     struct Token *next;
 } Token;
+
+Token *token_stream_tokenize(FILE *);
 
 #endif

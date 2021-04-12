@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <errno.h>
+#include "vm.h"
 #include "string.h"
 #include "tests.h"
 
@@ -20,7 +21,7 @@ typedef struct Test {
 	struct Test *next;
 } Test;
 
-Test *make_test(const char *filepath)
+Test *make_test(const char *filepath, RuntimePipe *pipe)
 {
 	FILE *fp;
 	char line[MAX_LINE_SIZE];
@@ -28,14 +29,14 @@ Test *make_test(const char *filepath)
     fp = fopen(filepath, "r");
 
     if (fp == NULL) {
-		perror("Problem with opening file\n");
+		fprintf(pipe->err, "Problem with opening file\n");
         return NULL;
 	}
 
 	fgets(line, MAX_LINE_SIZE, fp);
 	if (strcmp(TEST, trim(line, NULL)) != 0) {
-		printf("First line in test file must be a test separator '---TEST---', has: %s", line);
-                return NULL;
+		fprintf(pipe->out, "First line in test file must be a test separator '---TEST---', has: %s", line);
+        return NULL;
 	}
 	test_source = 1;
 
@@ -60,7 +61,7 @@ Test *make_test(const char *filepath)
 
    	fclose(fp);
     if (test_source == 1) {
-        printf("There is no %s part of test in file: %s, please update!", EXPECTED, filepath);
+        fprintf(pipe->err, "There is no %s part of test in file: %s, please update!", EXPECTED, filepath);
         return NULL;
     }
 
@@ -81,7 +82,7 @@ Test *make_test(const char *filepath)
 	return test;
 }
 
-Test *read_file(const char *filepath)
+Test *read_file(const char *filepath, RuntimePipe *pipe)
 {
     struct stat path_stat;
     stat(filepath, &path_stat);
@@ -94,7 +95,7 @@ Test *read_file(const char *filepath)
         Test *testsuite_head = NULL;
         if (NULL == (FD = opendir (filepath)))
         {
-            fprintf(stderr, "Error : Failed to open directory '%s' - %s\n", filepath, strerror(errno));
+            fprintf(pipe->err, "Error : Failed to open directory '%s' - %s\n", filepath, strerror(errno));
             return NULL;
         }
 
@@ -116,12 +117,12 @@ Test *read_file(const char *filepath)
 
             if (testsuite == NULL)
             {
-                testsuite = make_test(file);
+                testsuite = make_test(file, pipe);
                 testsuite_head = testsuite;
             }
             else
             {
-                testsuite->next = make_test(file);
+                testsuite->next = make_test(file, pipe);
                 testsuite = testsuite->next;
             }
         }
@@ -129,19 +130,24 @@ Test *read_file(const char *filepath)
         return testsuite_head;
     }
 
-    return make_test(filepath);
+    return make_test(filepath, pipe);
 }
 
-void testsuite(int argc, char **argv)
+void testsuite(int argc, char **argv, RuntimePipe *pipe)
 {
-	Test *test = read_file(argv[1]);	
+	Test *test = read_file(argv[1], pipe);
     if (test == NULL) {
-        printf("No tests executed...\n");
+        fprintf(pipe->err, "No tests executed...\n");
     }
 
+    RuntimeCommand *vm = find_command("runtime");
+    RuntimePipe runtime_pipe;
+    runtime_pipe.err = pipe->err;
+    runtime_pipe.out = pipe->out;
 	do {
-        printf("Test name: %s\n", test->test_filepath);
-        printf("Test source: %s\n", test->source);
+        runtime_pipe.in = fmemopen(test->source, strlen(test->source), "r");
+        char *args[] = {test->test_filepath, NULL};
+        vm->run(1, args, &runtime_pipe);
         printf("Test expected: %s\n\n", test->expected);
         test = test->next;
 	 } while (test != NULL);

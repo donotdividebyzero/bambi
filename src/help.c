@@ -3,8 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
-void print_help(FILE *stream)
+void help(int argc, char **argv, RuntimePipe *pipe)
 {
+    FILE *stream = pipe->err;
     int longest = 0;
 
     RuntimeCommand *commands = get_commands();
@@ -24,9 +25,4 @@ void print_help(FILE *stream)
                 (int) (longest - strlen(commands[i].name)), "",
                 commands[i].description);
     }
-}
-
-void help(int argc, char **argv)
-{
-    print_help(stderr);
 }
