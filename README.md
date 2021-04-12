@@ -1,6 +1,6 @@
 #### To start please build first a brumbrum
 ```Bash
-make && ./build/brumbrum
+make && ./brumbrum
 ```
 ---
 

@@ -5,6 +5,8 @@
 
 void help(int argc, char **argv, RuntimePipe *pipe)
 {
+    (void)argc;
+    (void)argv;
     FILE *stream = pipe->err;
     int longest = 0;
 

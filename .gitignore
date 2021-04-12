@@ -1,4 +1,6 @@
 *.swp
+*.d
+*.o
 /.idea
 /.vscode
 /build

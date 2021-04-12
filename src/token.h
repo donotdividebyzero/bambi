@@ -42,4 +42,6 @@ typedef struct Token {
 
 Token *token_stream_tokenize(FILE *);
 
+void token_stream_shutdown();
+
 #endif

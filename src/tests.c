@@ -135,20 +135,25 @@ Test *read_file(const char *filepath, RuntimePipe *pipe)
 
 void testsuite(int argc, char **argv, RuntimePipe *pipe)
 {
+    (void)argc;
 	Test *test = read_file(argv[1], pipe);
     if (test == NULL) {
         fprintf(pipe->err, "No tests executed...\n");
     }
 
     RuntimeCommand *vm = find_command("runtime");
-    RuntimePipe runtime_pipe;
-    runtime_pipe.err = pipe->err;
-    runtime_pipe.out = pipe->out;
+
 	do {
+        RuntimePipe runtime_pipe;
+        runtime_pipe.err = pipe->err;
+        runtime_pipe.out = pipe->out;
         runtime_pipe.in = fmemopen(test->source, strlen(test->source), "r");
         char *args[] = {test->test_filepath, NULL};
         vm->run(1, args, &runtime_pipe);
-        printf("Test expected: %s\n\n", test->expected);
+        printf("%s\n", test->test_filepath);
+        free(test->source);
+        free(test->expected);
+        fflush(runtime_pipe.in);
         test = test->next;
 	 } while (test != NULL);
 }
