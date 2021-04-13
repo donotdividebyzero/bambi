@@ -28,13 +28,15 @@ enum TokenType {
 };
 
 typedef struct Token_Metadata {
-    int line;
-    int line_position;
+    size_t line;
+    size_t line_position;
+    size_t length;
 } Token_Metadata;
 
 typedef struct Token {
     enum TokenType type;
     char *value;
+    int allocated;
     Token_Metadata *meta_data;
 
     struct Token *next;

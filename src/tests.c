@@ -150,7 +150,6 @@ void testsuite(int argc, char **argv, RuntimePipe *pipe)
         runtime_pipe.in = fmemopen(test->source, strlen(test->source), "r");
         char *args[] = {test->test_filepath, NULL};
         vm->run(1, args, &runtime_pipe);
-        printf("%s\n", test->test_filepath);
         free(test->source);
         free(test->expected);
         fflush(runtime_pipe.in);

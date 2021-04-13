@@ -10,11 +10,11 @@ Usage:
   Available subcommands:
     ./brumbrum help     - Usage, description
     ./brumbrum tests    - Command that build and run test suite
-    ./brumbrum runtime  - Brumbrum runtime
+    ./brumbrum runtime  - Brumbrum runtime, command run by default.
 ```
 
 ### @TODO
-1. [ ] - Tokenizer
+1. [X] - Tokenizer
 2. [ ] - AST
 3. [ ] - Interpreter
 4. [ ] - Test runner
