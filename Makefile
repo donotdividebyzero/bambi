@@ -26,3 +26,6 @@ clean:
 
 cleaner: clean
 	rm -rf $(PROG)
+
+check: all
+	./brumbrum tests
