@@ -1,7 +1,10 @@
 #ifndef __TOKEN_H
 #define __TOKEN_H
 
+#include <stdlib.h>
 #include <stdio.h>
+#include <ctype.h>
+#include <string.h>
 
 enum TokenType {
       // Single-character tokens.
@@ -17,7 +20,7 @@ enum TokenType {
   AND, OR,
 
   // Literals.
-  IDENTIFIER, STRING, NUMBER,
+  IDENTIFIER, STRING, INTEGER, FLOAT, NUMBER,
 
   // Keywords.
   IF, ELSE,
@@ -42,8 +45,18 @@ typedef struct Token {
     struct Token *next;
 } Token;
 
-Token *token_stream_tokenize(FILE *);
+typedef struct Tokenizer_Error {
+    char *error;
+} Tokenizer_Error;
 
-void token_stream_shutdown();
+Tokenizer_Error tokenize(FILE *);
+
+Token *next_token();
+
+Token *current_token();
+
+Tokenizer_Error eat_token(enum TokenType);
+
+Tokenizer_Error token_stream_shutdown();
 
 #endif

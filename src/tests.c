@@ -145,14 +145,25 @@ void testsuite(int argc, char **argv, RuntimePipe *pipe)
 
 	do {
         RuntimePipe runtime_pipe;
+        char *output = malloc(4096);
         runtime_pipe.err = pipe->err;
-        runtime_pipe.out = pipe->out;
+        runtime_pipe.out = fmemopen(output, 4096, "rw+");
         runtime_pipe.in = fmemopen(test->source, strlen(test->source), "r");
         char *args[] = {test->test_filepath, NULL};
         vm->run(1, args, &runtime_pipe);
+        if (strcmp(trim(output, NULL), trim(test->expected, NULL)) == 0) {
+            fprintf(pipe->out, "OK... %s\n", test->test_filepath);
+        } else {
+            fprintf(pipe->err, "Failed... %s\n", test->test_filepath);
+            fprintf(pipe->err, "    Expected: %s\n", test->expected);
+            fprintf(pipe->err, "    Got: %s\n", output);
+        }
         free(test->source);
         free(test->expected);
         fflush(runtime_pipe.in);
+        fflush(runtime_pipe.out);
+        free(output);
+
         test = test->next;
 	 } while (test != NULL);
 }
