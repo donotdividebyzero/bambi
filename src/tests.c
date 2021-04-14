@@ -132,7 +132,7 @@ void testsuite(int argc, char **argv, RuntimePipe *pipe)
     }
 
     RuntimeCommand *vm = find_command("runtime");
-
+    int exit_status = 0;
 	do {
         RuntimePipe runtime_pipe;
         char *output = malloc(4096);
@@ -144,6 +144,7 @@ void testsuite(int argc, char **argv, RuntimePipe *pipe)
         if (strcmp(trim(output, NULL), trim(test->expected, NULL)) == 0) {
             fprintf(pipe->out, "OK... %s\n", test->test_filepath);
         } else {
+            exit_status = 1;
             fprintf(pipe->err, "Failed... %s\n", test->test_filepath);
             fprintf(pipe->err, "    Expected: %s\n", test->expected);
             fprintf(pipe->err, "    Got: %s\n", output);
@@ -156,4 +157,8 @@ void testsuite(int argc, char **argv, RuntimePipe *pipe)
 
         test = test->next;
 	 } while (test != NULL);
+
+     if (exit_status == 1) {
+         exit(EXIT_FAILURE);
+     }
 }

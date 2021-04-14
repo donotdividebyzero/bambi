@@ -3,7 +3,7 @@ SRC_DIRS ?= ./src
 SRCS := $(shell find $(SRC_DIRS) -name "*.c")
 
 CC      := cc
-CFLAGS  := -Wall -Wextra -Werror
+CFLAGS  := -Wall -Wextra -Werror -Werror=enum-compare
 LDFLAGS :=
 
 OBJS   = $(SRCS:.c=.o)

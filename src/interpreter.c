@@ -9,15 +9,15 @@ Ast *interpret_binop(RuntimePipe *pipe, Ast *binop)
     ASSERT_ERROR(left);
     ASSERT_ERROR(right);
 
-    if (left->type != AV_NUMERIC || right->type != AV_NUMERIC) {
+    if ((left->type != AT_VALUE || right->type != AT_VALUE) || (left->value->type != AV_NUMERIC || right->value->type != AV_NUMERIC)) {
         return make_error("Can't perform bin operation on no numeric values!");
     }
 
     Ast_Numeric *result = malloc(sizeof(Ast_Numeric));
-    result->type = AN_INTEGER;
+    result->type = AN_FLOAT;
 
-    if (left->value->numeric->type == AN_FLOAT || right->value->numeric->type == AN_FLOAT) {
-        result->type = AN_FLOAT;
+    if (left->value->numeric->type == AN_INTEGER && right->value->numeric->type == AN_INTEGER) {
+        result->type = AN_INTEGER;
     }
 
     switch (binop->op->type) {
@@ -25,7 +25,7 @@ Ast *interpret_binop(RuntimePipe *pipe, Ast *binop)
             switch(result->type) {
                 case AN_FLOAT: {
                     if (left->value->numeric->type == AN_INTEGER && right->value->numeric->type == AN_FLOAT) {
-                        result->f = left->value->numeric->l + right->value->numeric->f;
+                        result->f = (float)left->value->numeric->l + right->value->numeric->f;
                     } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_INTEGER) {
                         result->f = left->value->numeric->f + (float)right->value->numeric->l;
                     } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_FLOAT) {
@@ -43,7 +43,7 @@ Ast *interpret_binop(RuntimePipe *pipe, Ast *binop)
             switch(result->type) {
                 case AN_FLOAT: {
                     if (left->value->numeric->type == AN_INTEGER && right->value->numeric->type == AN_FLOAT) {
-                        result->f = left->value->numeric->l - right->value->numeric->f;
+                        result->f = (float)left->value->numeric->l - right->value->numeric->f;
                     } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_INTEGER) {
                         result->f = left->value->numeric->f - (float)right->value->numeric->l;
                     } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_FLOAT) {
@@ -61,7 +61,7 @@ Ast *interpret_binop(RuntimePipe *pipe, Ast *binop)
             switch(result->type) {
                 case AN_FLOAT: {
                     if (left->value->numeric->type == AN_INTEGER && right->value->numeric->type == AN_FLOAT) {
-                        result->f = left->value->numeric->l * right->value->numeric->f;
+                        result->f = (float)left->value->numeric->l * right->value->numeric->f;
                     } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_INTEGER) {
                         result->f = left->value->numeric->f * (float)right->value->numeric->l;
                     } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_FLOAT) {
@@ -83,6 +83,8 @@ Ast *interpret_binop(RuntimePipe *pipe, Ast *binop)
             if (right->value->numeric->type == AN_FLOAT && right->value->numeric->f == 0) {
                 return make_error("You can't do division by 0!");
             }
+
+            result->type = AN_FLOAT;
 
             if (left->value->numeric->type == AN_INTEGER && right->value->numeric->type == AN_FLOAT) {
                 result->f = left->value->numeric->l / right->value->numeric->f;
