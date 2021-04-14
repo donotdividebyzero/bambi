@@ -1,8 +1,4 @@
 #include "token.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <string.h>
 
 Token *token_head;
 Token *current;
@@ -60,7 +56,7 @@ Tokenizer_Error eat_token(enum TokenType type)
         };
     }
 
-    char *buffer = malloc(200);
+    char *buffer = malloc(100);
 
     sprintf(
         buffer, 

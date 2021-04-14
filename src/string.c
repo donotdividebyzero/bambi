@@ -1,6 +1,4 @@
 #include "string.h"
-#include <string.h>
-#include <stdlib.h>
 
 char *ltrim(char *str, const char *seps)
 {

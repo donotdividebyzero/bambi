@@ -8,9 +8,8 @@
     #define NULL (void *)0
 #endif
 
-typedef struct VM VM;
-
-typedef struct RuntimePipe {
+typedef struct RuntimePipe
+{
     FILE *in;
     FILE *out;
     FILE *err;
@@ -24,7 +23,11 @@ typedef struct RuntimeCommand
 } RuntimeCommand;
 
 RuntimeCommand *find_command(const char *);
-
 RuntimeCommand *get_commands();
 size_t get_commands_size();
+
+#include "help.h"
+#include "tests.h"
+#include "runtime.h"
+
 #endif

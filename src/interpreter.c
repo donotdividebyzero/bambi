@@ -1,147 +1,124 @@
 #include "interpreter.h"
-#include "token.h"
 
-Ast factor()
+Ast *interpret_binop(RuntimePipe *pipe, Ast *binop)
 {
-    Token *token = current_token();
-    Tokenizer_Error is_eaten;
-    if (token->type == LEFT_PAREN) {
-        eat_token(LEFT_PAREN);
-        Ast in_expr = expr();
-        if (in_expr.error != NULL) {
-            return in_expr;
-        }
+    ASSERT_ERROR(binop);
+    Ast *left = interpret(pipe, binop->op->lvalue);
+    Ast *right = interpret(pipe, binop->op->rvalue);
 
-        is_eaten = eat_token(RIGHT_PAREN);
-        if (is_eaten.error != NULL) {
-            return (Ast) {
-                .error = is_eaten.error
-            };
-        }
+    ASSERT_ERROR(left);
+    ASSERT_ERROR(right);
 
-        return in_expr;
+    if (left->type != AV_NUMERIC || right->type != AV_NUMERIC) {
+        return make_error("Can't perform bin operation on no numeric values!");
     }
 
-    is_eaten = eat_token(INTEGER);
-    if (is_eaten.error != NULL) {
-        return (Ast) {
-            .error = is_eaten.error
-        };
+    Ast_Numeric *result = malloc(sizeof(Ast_Numeric));
+    result->type = AN_INTEGER;
+
+    if (left->value->numeric->type == AN_FLOAT || right->value->numeric->type == AN_FLOAT) {
+        result->type = AN_FLOAT;
     }
 
-    return (Ast) {
-        .error = NULL,
-        .number.l = strtol(token->value, NULL, 10)
-    };
+    switch (binop->op->type) {
+        case BINOP_ADD: {
+            switch(result->type) {
+                case AN_FLOAT: {
+                    if (left->value->numeric->type == AN_INTEGER && right->value->numeric->type == AN_FLOAT) {
+                        result->f = left->value->numeric->l + right->value->numeric->f;
+                    } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_INTEGER) {
+                        result->f = left->value->numeric->f + (float)right->value->numeric->l;
+                    } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_FLOAT) {
+                        result->f = left->value->numeric->f + right->value->numeric->f;
+                    }
+                } break;
+                case AN_INTEGER: {
+                    result->l = left->value->numeric->l + right->value->numeric->l;
+                } break;
+                default: break;
+            }
+            return make_numeric(result);
+        } break;
+        case BINOP_SUB: {
+            switch(result->type) {
+                case AN_FLOAT: {
+                    if (left->value->numeric->type == AN_INTEGER && right->value->numeric->type == AN_FLOAT) {
+                        result->f = left->value->numeric->l - right->value->numeric->f;
+                    } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_INTEGER) {
+                        result->f = left->value->numeric->f - (float)right->value->numeric->l;
+                    } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_FLOAT) {
+                        result->f = left->value->numeric->f - right->value->numeric->f;
+                    }
+                } break;
+                case AN_INTEGER: {
+                    result->l = left->value->numeric->l - right->value->numeric->l;
+                } break;
+                default: break;
+            }
+            return make_numeric(result);
+        } break;
+        case BINOP_MUL: {
+            switch(result->type) {
+                case AN_FLOAT: {
+                    if (left->value->numeric->type == AN_INTEGER && right->value->numeric->type == AN_FLOAT) {
+                        result->f = left->value->numeric->l * right->value->numeric->f;
+                    } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_INTEGER) {
+                        result->f = left->value->numeric->f * (float)right->value->numeric->l;
+                    } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_FLOAT) {
+                        result->f = left->value->numeric->f * right->value->numeric->f;
+                    }
+                } break;
+                case AN_INTEGER: {
+                    result->l = left->value->numeric->l * right->value->numeric->l;
+                } break;
+                default: break;
+            }
+            return make_numeric(result);
+        } break;
+        case BINOP_DIV: {
+            if (right->value->numeric->type == AN_INTEGER && right->value->numeric->l == 0) {
+                return make_error("You can't do division by 0!");
+            }
+
+            if (right->value->numeric->type == AN_FLOAT && right->value->numeric->f == 0) {
+                return make_error("You can't do division by 0!");
+            }
+
+            if (left->value->numeric->type == AN_INTEGER && right->value->numeric->type == AN_FLOAT) {
+                result->f = left->value->numeric->l / right->value->numeric->f;
+            } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_INTEGER) {
+                result->f = left->value->numeric->f / right->value->numeric->l;
+            } else if (left->value->numeric->type == AN_FLOAT && right->value->numeric->type == AN_FLOAT) {
+                result->f = left->value->numeric->f / right->value->numeric->f;
+            } else {
+                result->f = left->value->numeric->l / right->value->numeric->l;
+            }
+
+            return make_numeric(result);
+        } break;
+        case BINOP_MOD: {
+            switch(result->type) {
+                case AN_INTEGER: {
+                    result->l = left->value->numeric->l % right->value->numeric->l;
+                } break;
+                case (AN_FLOAT): {
+                    return make_error("Module operation is allowed only on integer values!");
+                }
+                default: break;
+            }
+            return make_numeric(result);
+        } break;
+    }
+
+    return make_error("Unexpected binary operation!");
 }
 
-Ast term() {
-    Ast factor_expr = factor();
-    if (factor_expr.error != NULL) {
-        return factor_expr;
-    }
-
-    long result = factor_expr.number.l;
-    Token *op = current_token();
-    Tokenizer_Error is_eaten;
-    while(op->type == SLASH || op->type == STAR) {
-        if (op->type == SLASH) {
-            is_eaten = eat_token(SLASH);
-            if (is_eaten.error != NULL) {
-                return (Ast) {
-                    .error = is_eaten.error
-                };
-            }
-
-            Ast factor_expr = factor();
-            if (factor_expr.error != NULL) {
-                return factor_expr;
-            }
-
-            if (factor_expr.number.l == 0) {
-                return (Ast) {
-                    .error = "You can't divide by 0!"
-                };
-            }
-
-            result = result / factor_expr.number.l;
-        }
-
-        if (op->type == STAR) {
-            is_eaten = eat_token(STAR);
-            if (is_eaten.error != NULL) {
-                return (Ast) {
-                    .error = is_eaten.error
-                };
-            }
-
-            Ast factor_expr = factor();
-            if (factor_expr.error != NULL) {
-                return factor_expr;
-            }
-
-            result = result * factor_expr.number.l;
-        }
-        op = current_token();
-    }
-
-    return (Ast) {
-        .error = NULL,
-        .number.l = result
-    };
-}
-
-Ast expr() 
+/**
+ * Entry point to interpreter
+ */
+Ast *interpret(RuntimePipe *pipe, Ast *root)
 {
-    Ast term_expr = term();
-    if (term_expr.error != NULL) {
-        return term_expr;
-    }
-
-    Token *op = current_token();
-    Tokenizer_Error is_eaten;
-    long result = term_expr.number.l;
-
-    while (op->type == PLUS || op->type == MINUS) {
-        if (op->type == PLUS) {
-            is_eaten = eat_token(PLUS);
-            if (is_eaten.error != NULL) {
-                return (Ast) {
-                    .error = is_eaten.error
-                };
-            }
-
-            Ast term_expr = term();
-            if (term_expr.error != NULL) {
-                return term_expr;
-            }
-
-            result = result + term_expr.number.l;
-        }
-
-        if (op->type == MINUS) {
-            is_eaten = eat_token(MINUS);
-            if (is_eaten.error != NULL) {
-                return (Ast) {
-                    .error = is_eaten.error
-                };
-            }
-
-            Ast term_expr = term();
-            if (term_expr.error != NULL) {
-                return term_expr;
-            }
-
-            result = result - term_expr.number.l;
-        }
-        op = current_token();
-    }
-
-    return (Ast) {
-        .error = NULL,
-        .number.l = result
-    };
+    ASSERT_ERROR(root);
+    if (root->type == AT_BINOP) return interpret_binop(pipe, root);
+    return root;
 }
-
-
-

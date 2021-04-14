@@ -59,4 +59,6 @@ Tokenizer_Error eat_token(enum TokenType);
 
 Tokenizer_Error token_stream_shutdown();
 
+char *token_type_to_str(enum TokenType);
+
 #endif

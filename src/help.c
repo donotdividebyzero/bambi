@@ -1,7 +1,4 @@
-#include "vm.h"
 #include "help.h"
-#include <stdio.h>
-#include <string.h>
 
 void help(int argc, char **argv, RuntimePipe *pipe)
 {
