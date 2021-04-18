@@ -26,8 +26,6 @@ RuntimeCommand *find_command(const char *);
 RuntimeCommand *get_commands();
 size_t get_commands_size();
 
-#include "help.h"
-#include "tests.h"
 #include "runtime.h"
 
 #endif

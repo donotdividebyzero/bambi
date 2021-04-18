@@ -1,10 +1,24 @@
 #include "interpreter.h"
 
-Ast *interpret_binop(RuntimePipe *pipe, Ast *binop)
+Ast *interpret_unary(RuntimePipe *pipe, Context *ctx, Ast *unary)
+{
+    Ast *value = interpret(pipe, ctx, unary->unary->expr);
+    ASSERT_ERROR(value);
+    if (value->type == AT_VALUE && value->value->type == AV_NUMERIC) {
+        if (unary->unary->type == AU_MINUS) {
+            if (value->value->numeric->type == AN_FLOAT) value->value->numeric->f = -1.0 * value->value->numeric->f;
+            else value->value->numeric->l = -1 * value->value->numeric->l;
+        }
+    }
+
+    return value;
+}
+
+Ast *interpret_binop(RuntimePipe *pipe, Context *ctx, Ast *binop)
 {
     ASSERT_ERROR(binop);
-    Ast *left = interpret(pipe, binop->op->lvalue);
-    Ast *right = interpret(pipe, binop->op->rvalue);
+    Ast *left = interpret(pipe, ctx, binop->op->lvalue);
+    Ast *right = interpret(pipe, ctx, binop->op->rvalue);
 
     ASSERT_ERROR(left);
     ASSERT_ERROR(right);
@@ -37,7 +51,6 @@ Ast *interpret_binop(RuntimePipe *pipe, Ast *binop)
                 } break;
                 default: break;
             }
-            return make_numeric(result);
         } break;
         case BINOP_SUB: {
             switch(result->type) {
@@ -55,7 +68,6 @@ Ast *interpret_binop(RuntimePipe *pipe, Ast *binop)
                 } break;
                 default: break;
             }
-            return make_numeric(result);
         } break;
         case BINOP_MUL: {
             switch(result->type) {
@@ -73,7 +85,6 @@ Ast *interpret_binop(RuntimePipe *pipe, Ast *binop)
                 } break;
                 default: break;
             }
-            return make_numeric(result);
         } break;
         case BINOP_DIV: {
             if (right->value->numeric->type == AN_INTEGER && right->value->numeric->l == 0) {
@@ -95,8 +106,6 @@ Ast *interpret_binop(RuntimePipe *pipe, Ast *binop)
             } else {
                 result->f = left->value->numeric->l / right->value->numeric->l;
             }
-
-            return make_numeric(result);
         } break;
         case BINOP_MOD: {
             switch(result->type) {
@@ -108,19 +117,69 @@ Ast *interpret_binop(RuntimePipe *pipe, Ast *binop)
                 }
                 default: break;
             }
-            return make_numeric(result);
         } break;
     }
 
-    return make_error("Unexpected binary operation!");
+    return make_numeric(result);
 }
 
-/**
- * Entry point to interpreter
- */
-Ast *interpret(RuntimePipe *pipe, Ast *root)
+Ast *interpret_assigment(RuntimePipe *pipe, Context *ctx, Ast *node)
+{
+    printf("Try tp allocate\n");
+    ASSERT_ERROR(node);
+    Context_Variable *ctx_var = find_in_context(ctx, node->assigment->var->var->name);
+    if (ctx_var) {
+        if (ctx_var->var->var->is_const) {
+            return make_error("You can't reassign const value!");
+        }
+        ctx_var->value = interpret(pipe, ctx, node->assigment->expr);
+        push_to_context(ctx, ctx_var);
+        return NULL;
+    }
+    ctx_var = malloc(sizeof(Context_Variable));
+    ctx_var->var = node->assigment->var;
+    ctx_var->value = interpret(pipe, ctx, node->assigment->expr);
+    push_to_context(ctx, ctx_var);
+
+    return NULL;
+}
+
+Ast *interpret_variable(RuntimePipe *pipe, Context *ctx, Ast *node)
+{
+    (void)pipe;
+    ASSERT_ERROR(node);
+    Context_Variable *var = find_in_context(ctx, node->var->name);
+    if (var) {
+        return var->value;
+    }
+
+    char *err = malloc(100);
+    return make_error(err);
+}
+
+Ast *interpret_statement_list(RuntimePipe *pipe, Context *ctx, Ast *node)
+{
+    ASSERT_ERROR(node);
+    Ast *stmt = *node->stmt_list->statements;
+    for(size_t i = 0; i <= node->stmt_list->size - 1; i++) {
+        interpret(pipe, ctx, stmt);
+        stmt++;
+    }
+
+    return NULL;
+}
+
+Ast * interpret(RuntimePipe *pipe, Context *ctx, Ast *root)
 {
     ASSERT_ERROR(root);
-    if (root->type == AT_BINOP) return interpret_binop(pipe, root);
-    return root;
+    printf("Interpret(%d)", root->type);
+    if (root->type == AT_VALUE) return root;
+    if (root->type == AT_ASSIGMENT) return interpret_assigment(pipe, ctx, root);
+    if (root->type == AT_VARIABLE) return interpret_variable(pipe, ctx, root);
+    if (root->type == AT_BINOP) return interpret_binop(pipe, ctx, root);
+    if (root->type == AT_UNARY) return interpret_unary(pipe, ctx, root);
+    if (root->type == AT_EMPTY) return NULL; //@TODO: this might cause some problems in future watch out at this.
+    if (root->type == AT_STATEMENT_LIST) return interpret_statement_list(pipe, ctx, root);
+
+    return make_error("Unknown type!");
 }

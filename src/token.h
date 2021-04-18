@@ -5,29 +5,32 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include "string.h"
 
 enum TokenType {
+  T_EOF,
       // Single-character tokens.
-  LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
-  COMMA, DOT, MINUS, PLUS, SEMICOLON, COLON, SLASH, STAR,
+  T_LPAREN, T_RPAREN, T_LBRACE, T_RBRACE,
+  T_COMMA, T_DOT, T_MINUS, T_PLUS, T_SEMICOLON, T_COLON, T_SLASH, T_STAR,
 
   // One or two character tokens.
-  ASSIGN,
-  BANG, BANG_EQUAL,
-  EQUAL, EQUAL_EQUAL,
-  GREATER, GREATER_EQUAL,
-  LESS, LESS_EQUAL,
-  AND, OR,
+  T_ASSIGN,
+  T_BRANG, T_BANG_EQUAL,
+  T_EQUAL,
+  T_GREATER, T_GREATER_EQUAL,
+  T_LESS, T_LESS_EQUAL,
+  T_AND, T_OR,
 
   // Literals.
-  IDENTIFIER, STRING, INTEGER, FLOAT, NUMBER,
+  T_IDENTIFIER, T_STRING,
+  T_INTEGER, T_FLOAT,
 
-  // Keywords.
-  IF, ELSE,
-  TRUE, FALSE, NIL,
-  FN, RETURN,
-  FOR, WHILE, 
-  LET, CONST
+  // Keywords 
+  T_IF, T_ELSE,
+  T_TRUE, T_FALSE, T_NIL,
+  T_FOR, T_WHILE,
+  T_CONST,
+  T_FN, T_STRUCT
 };
 
 typedef struct Token_Metadata {

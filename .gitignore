@@ -3,7 +3,7 @@
 *.o
 /.idea
 /.vscode
-/build
+/build/*.o
 .DS_Store
 /src/.DS_Store
 brumbrum

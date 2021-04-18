@@ -1,11 +1,61 @@
 #include "ast.h"
+#include <stdio.h>
 
+void free_ast_value(Ast *node)
+{
+    if (node->value->type == AV_STRING)
+    {
+        free(node->value->str->value);
+        free(node->value->str);
+    }
+
+    if (node->value->type == AV_NUMERIC)
+    {
+        free(node->value->numeric);
+    }
+
+    free(node);
+}
+
+void free_ast_error(Ast *node)
+{
+    if (node->error != NULL)
+    {
+        free(node->error);
+        free(node);
+    }
+}
+
+void free_ast(Ast *node) 
+{
+    if (node->error != NULL)
+    {
+        free_ast_error(node);
+    }
+    if (node->type == AT_VALUE) free_ast_value(node);
+}
 
 char *ast_type_to_str(enum Ast_Type type)
 {
     if (type == AT_VALUE) return "AT_VALUE";
     if (type == AT_BINOP) return "AT_BINOP";
+    if (type == AT_UNARY) return "AT_UNARY";
+    if (type == AT_ASSIGMENT) return "AT_ASSIGMENT";
+    if (type == AT_VARIABLE) return "AT_VARIABLE";
+    if (type == AT_EMPTY) return "AT_EMPTY";
+    if (type == AT_STATEMENT_LIST) return "AT_STATEMENT_LIST";
     return NULL;
+}
+
+Ast *make_unary(enum Ast_Unary_Type type, Ast *expr)
+{
+    Ast *node = malloc(sizeof(Ast));
+    node->type = AT_UNARY;
+    Ast_Unary *unary = malloc(sizeof(Ast_Unary));
+    node->unary = unary;
+    node->unary->type = type;
+    node->unary->expr = expr;
+    return node;
 }
 
 Ast *make_error(char *err)
@@ -79,4 +129,60 @@ Ast *make_binop(enum Ast_BinOp_Enum type, Ast *lval, Ast *rval)
 
     node->op = binop;
     return node;
+}
+
+Ast *make_variable(char *name, int is_const)
+{
+    Ast *node = malloc(sizeof(Ast));
+    node->type = AT_VARIABLE;
+
+    Ast_Variable *var = malloc(sizeof(Ast_Variable));
+    var->name = malloc(strlen(name));
+    strncpy(var->name, name, strlen(name));
+    var->is_const = is_const;
+    node->var = var;
+
+    return node;
+}
+
+Ast *make_empty()
+{
+    Ast *node = malloc(sizeof(Ast));
+    node->type = AT_EMPTY;
+    return node;
+}
+
+Ast *make_assigment(Ast* var, Ast *expr)
+{
+    Ast *node = malloc(sizeof(Ast));
+    node->type = AT_ASSIGMENT;
+    Ast_Assigment *assigment = malloc(sizeof(Ast_Assigment));
+    assigment->expr = expr;
+    assigment->var = var;
+
+    node->assigment = assigment;
+    return node;
+}
+
+Ast *make_statement_list(Ast *root, struct Ast *stmt)
+{
+    if (stmt == NULL) {
+        return make_error("Statment can't be NULL it can be an empty statement.");
+    }
+
+    if (root == NULL) {
+        root = malloc(sizeof(Ast));
+        root->type = AT_STATEMENT_LIST;
+        root->stmt_list = malloc(sizeof(Ast_Statement_List));
+        root->stmt_list->statements = malloc(sizeof(Ast));
+        root->stmt_list->size = 1;
+        root->stmt_list->statements[root->stmt_list->size-1] = stmt;
+        return root;
+    }
+
+    root->stmt_list->size = root->stmt_list->size + 1;
+    root->stmt_list->statements = realloc(root->stmt_list->statements, (root->stmt_list->size * sizeof(Ast)));
+    root->stmt_list->statements[root->stmt_list->size-1] = stmt;
+    
+    return root;
 }

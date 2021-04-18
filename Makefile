@@ -13,7 +13,7 @@ DEPS   = $(SRCS:.c=.d)
 all: $(PROG)
 
 $(PROG): $(OBJS)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) $(DEBUG) $(LDFLAGS) -o $@ $^
 
 %.o: %.c
 	$(CC) $(CFLAGS) -MMD -c $< -o $@
@@ -28,4 +28,8 @@ cleaner: clean
 	rm -rf $(PROG)
 
 check: all
-	./brumbrum tests
+	./$(PROG) tests
+
+debug: DEBUG = -DDEBUG
+
+debug: $(PROG)

@@ -1,0 +1,1 @@
+(LET)expression := T_INTEGER(5) SUB --+-T_INTEGER(3) ADD T_INTEGER(4) SUB +T_INTEGER(2)

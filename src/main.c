@@ -6,7 +6,8 @@ int main(int argc, char **argv)
     pipe.in = stdin;
     pipe.out = stdout;
     pipe.err = stderr;
-    
+
+      
     if (argc > 1) {
         for(int i=1; i < argc; i++) {
             RuntimeCommand *cmd = find_command(argv[i]);

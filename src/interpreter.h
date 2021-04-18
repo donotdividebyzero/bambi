@@ -3,7 +3,8 @@
 
 #include "vm.h"
 #include "ast.h"
+#include "context.h"
 
-Ast *interpret(RuntimePipe *, Ast *);
+Ast *interpret(RuntimePipe *, Context *, Ast *);
 
 #endif

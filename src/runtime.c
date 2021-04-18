@@ -12,23 +12,27 @@ void runtime(int argc, char** argv, RuntimePipe *pipe)
         return;
     }
 
-    Ast *parser_result = expr();
-    if (parser_result->error != NULL) {
-        fprintf(pipe->out, "%s", parser_result->error);
-        free(parser_result->error);
+    Ast *program_result = program();
+
+    if (program_result->error != NULL) {
+        fprintf(pipe->out, "%s", program_result->error);
+        free_ast(program_result);
         token_stream_shutdown();
         return;
     }
 
-    Ast *result = interpret(pipe, parser_result);
+    create_global_context();
+    Ast *result = interpret(pipe, get_global_context(), program_result);
+    free_ast(program_result);
+    free_global_context();
 
     if (result->error != NULL) {
         fprintf(pipe->out, "%s", result->error);
-        free(result->error);
+        free_ast(result);
         token_stream_shutdown();
         return;
     }
-    
+
     if (result->type == AT_VALUE) {
         if (result->value->type == AV_NUMERIC) {
             if (result->value->numeric->type == AN_FLOAT) {
@@ -44,5 +48,6 @@ void runtime(int argc, char** argv, RuntimePipe *pipe)
         fprintf(pipe->out, "Wrong value returned, expected 'AT_VALUE' got: '%s'", ast_type_to_str(result->type));
     }
 
+    free_ast(result);
     token_stream_shutdown();
 }

@@ -1,4 +1,0 @@
----TEST---
-5.5/0.0
----EXPECTED---
-You can't do division by 0!
