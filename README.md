@@ -7,24 +7,14 @@ I do not use any quality tools, and project is leaking memory like my old Vw Gol
 make
 ```
 ---
-#### Running tests
-```Bash
-make check
-```
----
-### Possible commands in brumbrum
-```Bash
-Usage:
-  Available subcommands:
-    ./brumbrum help     - Usage, description
-    ./brumbrum runtime  - Brumbrum runtime, command run by default.
-```
 
 ### @TODO
 1. [X] - Tokenizer
-2. [ ] - AST
-3. [ ] - Interpreter
+2. [X] - AST
+3. [X] - Interpreter
   a. [X] - simple expressions
-  b. [ ] - variable assigments
-  c. [ ] - procedure calls
+  b. [X] - variable assigments
+  c. [X] - function calls
+  d. []  - if statement
+  e. []  - intrinsics
 4. [] - Test runner
