@@ -36,7 +36,7 @@ enum TokenType {
 
   // Keywords 
   T_IF, T_ELSE,
-  T_FOR, T_WHILE,
+  T_FOR, T_WHILE, T_BREAK, T_CONTINUE,
   T_CONST,
   T_FN, T_STRUCT,
   T_RETURN
@@ -129,6 +129,18 @@ struct If {
 };
 typedef struct If If;
 
+struct For {
+   struct Ast *body;
+   struct Ast *condition;
+};
+typedef struct For For;
+
+struct While {
+   struct Ast *body;
+   struct Ast *condition;
+};
+typedef struct While While;
+
 typedef struct StatementList {
     struct Ast *statements;
 } StatementList;
@@ -165,7 +177,11 @@ struct ExprList
 typedef struct ExprList ExprList;
 
 enum AstType {
-    AT_WHILE,
+    AT_BREAK,
+    AT_CONTINUE,
+    AT_RETURN,
+    AT_WHILE, 
+    AT_FOR,
     AT_IF,
     AT_EXPR_LIST,
     AT_VALUE,
@@ -185,6 +201,8 @@ typedef struct Ast
     Token *token;
     enum AstType type;
     union {
+        While _while;
+        For _for;
         If _if;
         ExprList expr_list;
         Unary unary;

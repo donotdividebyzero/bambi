@@ -54,13 +54,51 @@ void add_function(Function *new_function)
     }
 }
 
+Ast *interpret_statement_list(Context *ctx, Ast *ast)
+{
+    StatementList *stmtList = &ast->stmt_list;
+    Ast *stmt = stmtList->statements;
+    while (stmt)
+    {
+        interpret(ctx, stmt);
+        stmt = stmt->next;
+    }
+
+    return NULL;
+}
+
+Ast *interpret_for(Context *ctx, Ast *ast)
+{
+    (void)ctx;
+    (void)ast;
+    print_compiler_error(ast->token, "TODO: For loops not implemented!");
+    exit(1);
+    return NULL;
+}
+
+Ast *interpret_while(Context *ctx, Ast *ast)
+{
+    While *_while = &ast->_while;
+
+    while(true) {
+        Ast *condition = interpret(ctx, _while->condition);
+        if (is_truthy(&condition->value)) {
+            interpret_statement_list(ctx, _while->body);
+        } else {
+            break;
+        }
+    }
+
+    return make_empty(ast->token);
+}
+
 Ast *interpret_if(Context *ctx, Ast *ast)
 {
     If _if = ast->_if;
     Ast *condition = interpret(ctx, _if.condition);
     assert(condition->type == AT_VALUE && "Condition resolved to not value!");
     if (is_truthy(&condition->value)) {
-        interpret(ctx, _if.body);
+        return interpret(ctx, _if.body);
     }
 
     return make_empty(ast->token);
@@ -73,9 +111,9 @@ Ast *interpret_unary(Context *ctx, Ast *ast)
     if (value->type == AT_VALUE)
     {
         Value val = value->value;
-        if (value->type == T_NUMBER)
+        if (val.type == T_NUMBER)
         {
-            val.n = -1 * val.n;
+            val.n *= -1;
             // we need to assign it back
             value->value = val;
         }
@@ -201,18 +239,6 @@ Ast *interpret_variable(Context *ctx, Ast *expr)
     exit(EXIT_FAILURE);
 }
 
-Ast *interpret_statement_list(Context *ctx, Ast *ast)
-{
-    StatementList *stmtList = &ast->stmt_list;
-    Ast *stmt = stmtList->statements;
-    while (stmt)
-    {
-        interpret(ctx, stmt);
-        stmt = stmt->next;
-    }
-
-    return NULL;
-}
 
 Ast *user_defined_function_runner(Context *ctx, Ast *fn_call, UserDefinedFunction *user_fn)
 {
@@ -241,13 +267,7 @@ Ast *user_defined_function_runner(Context *ctx, Ast *fn_call, UserDefinedFunctio
         }
     }
 
-    StatementList *stmt_list = &user_fn->statements->stmt_list;
-    Ast *statement = stmt_list->statements;
-    while(statement) {
-        interpret(&stack, statement);
-        statement = statement->next;
-    }
-
+    interpret_statement_list(&stack, user_fn->statements);
     // Drop stack.
     if (stack.vars != NULL) {
         ContextVariable *var = stack.vars;
@@ -369,6 +389,8 @@ Ast *interpret_logical(Context *ctx, Ast *ast)
 
 Ast *interpret(Context *ctx, Ast *ast)
 {
+    if (ast->type == AT_WHILE) return interpret_while(ctx, ast);
+    if (ast->type == AT_FOR) return interpret_for(ctx, ast);
     if (ast->type == AT_IF) return interpret_if(ctx, ast);
     if (ast->type == AT_EMPTY)
         return ast;

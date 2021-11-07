@@ -1,6 +1,43 @@
 #include "ast.h"
 #include <string.h>
 
+Ast *make_keyword(Token *token)
+{
+    Ast *node = malloc(sizeof(Ast));
+    node->token = token;
+    if (token->type == T_BREAK) {
+        node->type = AT_BREAK;
+    }
+    if (token->type == T_CONTINUE) {
+        node->type = AT_CONTINUE;
+    }
+    if (token->type == T_RETURN) {
+        node->type = AT_RETURN;
+    }
+
+    return node;
+}
+
+Ast *make_while(Token *token, Ast *condition, Ast *body)
+{
+    Ast *node = malloc(sizeof(Ast));
+    node->token = token;
+    node->type = AT_WHILE;
+    node->_while = (While){body, condition};
+
+    return node;
+}
+
+Ast *make_for(Token *token, Ast *condition, Ast *body)
+{
+    Ast *node = malloc(sizeof(Ast));
+    node->token = token;
+    node->type = AT_FOR;
+    node->_for = (For){body, condition};
+
+    return node;
+}
+
 Ast *make_if(Token *token, Ast *condition, Ast *body)
 {
     Ast *node = malloc(sizeof(Ast));

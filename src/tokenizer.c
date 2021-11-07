@@ -36,7 +36,9 @@ TokenKeyword keywords[] = {
     {T_WHILE, {5, "while"}},
     {T_FN, {2, "fn"}},
     {T_STRUCT, {6, "struct"}},
-    {T_RETURN, {6, "return"}}
+    {T_RETURN, {6, "return"}},
+    {T_BREAK, {5, "break"}},
+    {T_CONTINUE, {8, "continue"}}
 };
 
 TokenKeyword *get_keyword(const String *keyword)
@@ -87,6 +89,8 @@ const char *token_type_to_str(enum TokenType type) {
     if (type == T_TRUE) return "T_TRUE";
     if (type == T_FALSE) return "T_FASLE";
     if (type == T_NIL) return "T_NIL";
+    if (type == T_BREAK) return "T_BREAK";
+    if (type == T_CONTINUE) return "T_CONTINUE";
     return NULL;
 }
 

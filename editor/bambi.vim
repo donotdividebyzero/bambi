@@ -13,7 +13,7 @@ endif
 syntax keyword bambiTodos TODO FIXME NOTE
 
 " Language keywords
-syntax keyword bambiKeywords if else elseif while do const return for fn
+syntax keyword bambiKeywords if else elseif while do const return for fn break continue
 
 " Comments
 syntax region bambiCommentLine start="//" end="$" contains=bambiTodos
@@ -34,7 +34,7 @@ syntax match bambiNumber "\v<0o\o+>"
 syntax keyword bambiBoolean true false nil
 
 " Builin Types
-syntax keyword bambiBuiltInTypes bool int float nil void struct enum
+syntax keyword bambiBuiltInTypes bool number string nil void struct enum
 
 " Set highlights
 highlight default link bambiTodos Todo

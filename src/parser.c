@@ -73,6 +73,20 @@ Ast *statement_list(Lexer *lexer)
     return stmt_list;
 }
 
+Ast *_while(Lexer *lexer)
+{
+    Token *token = lexer->current_token;
+    eat_token(lexer, T_WHILE);
+    return make_while(token, equal(lexer), compound_statement(lexer));
+}
+
+Ast *_for(Lexer *lexer)
+{
+    Token *token = lexer->current_token;
+    eat_token(lexer, T_FOR);
+    return make_for(token, equal(lexer), compound_statement(lexer));
+}
+
 Ast *_if(Lexer *lexer)
 {
     Token *token = lexer->current_token;
@@ -122,6 +136,10 @@ Ast *statement(Lexer *lexer)
 
     if (token->type == T_IF) {
         return _if(lexer);
+    }
+
+    if (token->type == T_WHILE) {
+        return _while(lexer);
     }
 
     return empty(lexer);
@@ -221,6 +239,18 @@ Ast *factor(Lexer *lexer)
         return in_expr;
     }
 
+    if (token->type == T_RETURN) {
+        return make_keyword(token);
+    }
+
+    if (token->type == T_BREAK) {
+        return make_keyword(token);    
+    }
+
+    if (token->type == T_CONTINUE) {
+        return make_keyword(token);
+    }
+
     return variable(lexer);
 }
 
@@ -308,13 +338,23 @@ Ast *or(Lexer *lexer)
     return lvalue;
 }
 
+bool is_cmp_token(Token *token)
+{
+    enum TokenType cmp_types[] = {T_CMP, T_LESS, T_LESS_EQUAL, T_GREATER, T_GREATER_EQUAL};
+    for(size_t i=0; i<(sizeof(cmp_types)/sizeof(enum TokenType)); i++) {
+        if (cmp_types[i] == token->type) return true;
+    }
+    return false;
+}
+
 Ast *equal(Lexer *lexer) 
 {
     Ast *lvalue = expr(lexer);
     Token *token = lexer->current_token;
-
-    while(token->type == T_OR) {
-        eat_token(lexer, T_OR);
+    Token *current = token;
+    while(is_cmp_token(token)) {
+        if (token->type != current->type) break;
+        eat_token(lexer, token->type);
         lvalue = make_logical(token, lvalue, expr(lexer));
         token = lexer->current_token;
     }
