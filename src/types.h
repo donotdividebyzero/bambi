@@ -70,15 +70,15 @@ typedef struct Token Token;
 struct SourceCodeFile {
     const char *file_name;
     const char *content;
-    uint16_t line;
-    uint16_t column;
+    int line;
+    int column;
     size_t size;
 };
 typedef struct SourceCodeFile SourceCodeFile;
 
 struct Lexer {
     SourceCodeFile *file;
-    uint16_t current;
+    int current;
     Token *tokens;
     Token *current_token;
 };
