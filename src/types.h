@@ -50,8 +50,8 @@ typedef struct TokenKeyword TokenKeyword;
 
 struct FileLocation {
     const char *file_name;
-    uint16_t line;
-    uint16_t column;
+    int line;
+    int column;
 };
 typedef struct FileLocation FileLocation;
 
