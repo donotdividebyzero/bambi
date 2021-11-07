@@ -1,13 +1,5 @@
-#ifndef __STRING_H
-#define __STRING_H
+#ifndef __STRING
+#define __STRING
 
-#include <string.h>
-#include <stdlib.h>
-
-char *ltrim(char *str, const char *seps);
-
-char *rtrim(char *str, const char *seps);
-
-char *trim(char *str, const char *seps);
 
 #endif

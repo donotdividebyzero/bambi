@@ -1,31 +1,20 @@
 #ifndef __VM_H
 #define __VM_H
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #ifndef NULL
     #define NULL (void *)0
 #endif
 
-typedef struct RuntimePipe
-{
-    FILE *in;
-    FILE *out;
-    FILE *err;
-} RuntimePipe;
+#include "types.h"
 
-typedef struct RuntimeCommand
-{
-    const char *name;
-    const char *description;
-    void (*run)(int argc, char **argv, RuntimePipe *);
-} RuntimeCommand;
+bool string_equal(const String *, const String *);
+String string_concat(const String *, const String *);
 
-RuntimeCommand *find_command(const char *);
-RuntimeCommand *get_commands();
-size_t get_commands_size();
+void cleanup(Lexer *);
+void print_compiler_error(Token *, const char *);
+void print_compiler_note(Token *, const char *);
 
-#include "runtime.h"
+
+bool is_truthy(Value *);
+bool is_equal(Value *, Value *);
 
 #endif

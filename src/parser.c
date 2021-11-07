@@ -1,180 +1,322 @@
 #include "parser.h"
+#include "tokenizer.h"
+#include "ast.h"
 
-Ast *program()
+void eat_token(Lexer *lexer, enum TokenType type)
 {
-    Ast *stmt_list = statement_list();
-    Token *token = current_token();
-    if (token->type != T_EOF) {
-        char *err_buf = malloc(200);
-        sprintf(err_buf, "Unexpected token at end of file, expected 'EOF', got: '%s'(%s)", token_type_to_str(token->type), token->value);
-        return make_error(err_buf);
+    if (lexer->current_token->type == type) {
+        lexer->current_token = lexer->current_token->next;
+        return;
+    }
+
+    char *buffer = malloc(1024);
+
+    sprintf(
+        buffer, 
+        "Unexptected token, expected '%s', got '%s'",
+        token_type_to_str(type),
+        token_type_to_str(lexer->current_token->type)
+    );
+
+    print_compiler_error(lexer->current_token, buffer);
+    free(buffer);
+    exit(EXIT_FAILURE);
+}
+
+Ast *program(Lexer *lexer)
+{
+    Ast *stmt_list = statement_list(lexer);
+    Token *token = lexer->current_token;
+    if (token->type == T_EOF) {
+        return stmt_list;
+    }
+
+    char *err_buf = malloc(512);
+    sprintf(
+        err_buf, 
+        "Unexpected token at end of lexer, expected 'EOF', got: '%s'(%.*s)", 
+        token_type_to_str(token->type),
+        (int)token->value.size,
+        token->value.text
+    );
+    print_compiler_error(token, err_buf);
+    free(err_buf);
+    exit(EXIT_FAILURE);
+}
+
+bool dont_need_semicolon(enum AstType type)
+{
+    return type == AT_FN_DEFINITION || 
+        type == AT_IF ||
+        type == AT_WHILE;
+}
+
+Ast *statement_list(Lexer *lexer)
+{
+    Ast *stmt = statement(lexer);
+    Ast *stmt_list = make_statement_list(lexer->current_token, NULL, stmt);
+    Token *token = lexer->current_token;
+    bool run = dont_need_semicolon(stmt->type);
+    while(token->type == T_SEMICOLON || run) {
+        if (!run) {
+            eat_token(lexer, T_SEMICOLON);
+        }
+        run = false;
+        Ast *stmt = statement(lexer);
+        if (dont_need_semicolon(stmt->type)) {
+            run = true;
+        }
+        stmt_list = make_statement_list(token, stmt_list, stmt);
+        token = lexer->current_token;
     }
 
     return stmt_list;
 }
 
-Ast *statement_list()
+Ast *_if(Lexer *lexer)
 {
-    Ast *stmt = statement();
-    Ast *stmt_list = make_statement_list(NULL, stmt);
-    Token *token = current_token();
-    while(token->type == T_SEMICOLON) {
-        EAT(T_SEMICOLON);
-        Ast *in_stmt = statement();
-        ASSERT_ERROR(in_stmt);
-        stmt_list = make_statement_list(stmt_list, in_stmt);
-        token = current_token();
-    }
+    Token *token = lexer->current_token;
+    eat_token(lexer, T_IF);
 
-    return stmt_list;
+    return make_if(token, equal(lexer), compound_statement(lexer));
 }
 
-Ast *statement()
+Ast *function_call_expr(Lexer *lexer)
 {
-    Token *token = current_token();
+    Token *token = lexer->current_token;
+    eat_token(lexer, T_IDENTIFIER);
+    return make_function_call(token, expr_list(lexer));
+}
 
+Ast *function_definition_statement(Lexer *lexer)
+{
+    eat_token(lexer, T_FN);
+    Token *token = lexer->current_token;
+    eat_token(lexer, T_IDENTIFIER);
+
+    return make_function_definition(
+        token, 
+        expr_list(lexer),
+        compound_statement(lexer)
+    );
+}
+
+Ast *statement(Lexer *lexer)
+{
+    Token *token = lexer->current_token;
     if (token->type == T_LBRACE) {
-        Ast *statement = compound_statement();
-        ASSERT_ERROR(statement);
-        return statement;
+        return compound_statement(lexer);
     }
 
-    if (token->type == T_CONST || token->type == T_IDENTIFIER) 
-    {
-        Ast *statement = assigment_statement();
-        ASSERT_ERROR(statement);
-        return statement;
+    if (token->type == T_IDENTIFIER && token->next->type == T_LPAREN) {
+        return function_call_expr(lexer);
     }
 
-    return empty();
+    if (token->type == T_FN && token->next->type == T_IDENTIFIER) {
+        return function_definition_statement(lexer);
+    }
+
+    if (token->type == T_CONST || token->type == T_IDENTIFIER) {
+        return assigment(lexer);
+    }
+
+    if (token->type == T_IF) {
+        return _if(lexer);
+    }
+
+    return empty(lexer);
 }
 
-Ast *assigment_statement()
+Ast *assigment(Lexer *lexer)
 {
-    Ast *var = variable();
-    ASSERT_ERROR(var);
-    EAT(T_ASSIGN);
-    Ast *expression = expr();
-    ASSERT_ERROR(expression);
-    return make_assigment(var, expression);
+    Ast *var = variable(lexer);
+    Token *assigment = lexer->current_token;
+    eat_token(lexer, T_ASSIGN);
+    return make_assigment(assigment, var, equal(lexer));
 }
 
-Ast *compound_statement()
+Ast *compound_statement(Lexer *lexer)
 {
-    EAT(T_LBRACE);
-    Ast *list = statement_list();
-    EAT(T_RBRACE);
+    eat_token(lexer, T_LBRACE);
+    Ast *list = statement_list(lexer);
+    eat_token(lexer, T_RBRACE);
     return list;
 }
 
-Ast *variable()
+Ast *variable(Lexer *lexer)
 {
-    Token *token = current_token();
-    int is_const = 0;
+    Token *token = lexer->current_token;
+    bool is_const = false;
     if (token->type == T_CONST) {
-        EAT(T_CONST);
-        is_const = 1;
+        eat_token(lexer, T_CONST);
+        is_const = true;
+        token = lexer->current_token;
     }
-    token = current_token();
 
-    EAT(T_IDENTIFIER);
-    return make_variable(token->value, is_const);
+    eat_token(lexer, T_IDENTIFIER);
+    return make_variable(token, is_const);
 }
 
-Ast *empty()
+Ast *empty(Lexer *lexer)
 {
-    return make_empty();
+    return make_empty(lexer->current_token);
 }
 
-
-Ast *factor()
+Ast *factor(Lexer *lexer)
 {
-    Token *token = current_token();
-    if (token == NULL) {
-        return make_error("Unexpected token, token is null!");
-    }
-    
+    Token *token = lexer->current_token;
+
     if (token->type == T_PLUS) {
-        EAT(T_PLUS);
-        Ast *value = factor();
-        ASSERT_ERROR(value);
-        return make_unary(AU_PLUS, value);
+        eat_token(lexer, T_PLUS);
+        return factor(lexer);
     }
 
     if (token->type == T_MINUS) {
-        EAT(T_MINUS);
-        Ast *value = factor();
-        ASSERT_ERROR(value);
-        return make_unary(AU_MINUS, value);
+        eat_token(lexer, T_MINUS);
+        return make_unary(token, factor(lexer));
     }
 
-    if (token->type == T_INTEGER) {
-        EAT(T_INTEGER);
-        return make_integer(token->value);
+    if (token->type == T_NUMBER) {
+        char *end;
+        Value val = (Value) {
+            .type = AV_NUMBER,
+            .n = strtof(token->value.text, &end)
+        };
+        eat_token(lexer, T_NUMBER);
+        return make_value(token, &val);
     }
 
-    if (token->type == T_FLOAT) {
-        EAT(T_FLOAT);
-        return make_float(token->value);
+    if (token->type == T_STRING) {
+        Value val = (Value) {
+            .type = AV_STRING,
+            .str = &token->value
+        };
+        eat_token(lexer, T_STRING);
+        return make_value(token, &val);
+    }
+
+    if (token->type == T_TRUE || token->type == T_FALSE || token->type == T_NIL) {
+        if (token->type == T_NIL) {
+            eat_token(lexer, T_NIL);
+            return make_value(token, NULL);
+        }
+        Value val = (Value) {
+            .type = AV_BOOL
+        };
+        if (token->type == T_TRUE) {
+            eat_token(lexer, T_TRUE);
+            val.b = true;
+        } else {
+            eat_token(lexer, T_FALSE);
+            val.b = false;
+        }
+
+        return make_value(token, &val);
     }
 
     if (token->type == T_LPAREN) {
-        EAT(T_LPAREN);
-        Ast *in_expr = expr();
-        ASSERT_ERROR(in_expr);
-        EAT(T_RPAREN);
+        eat_token(lexer, T_LPAREN);
+        Ast *in_expr = equal(lexer);
+        eat_token(lexer, T_RPAREN);
         return in_expr;
     }
 
-    return variable();
+    return variable(lexer);
 }
 
-Ast *term() {
-    Ast *lvalue = factor();
-    ASSERT_ERROR(lvalue);
+Ast *term(Lexer *lexer) {
+    Ast *lvalue = factor(lexer);
 
-    Token *op = current_token();
-    while(op->type == T_SLASH || op->type == T_STAR) {
-        if (op->type == T_SLASH) {
-            EAT(T_SLASH);
-            Ast *rvalue = factor();
-            ASSERT_ERROR(rvalue);
-            lvalue = make_binop(BINOP_DIV, lvalue, rvalue);
-        }
-
-        if (op->type == T_STAR) {
-            EAT(T_STAR);
-            Ast *rvalue = factor();
-            ASSERT_ERROR(rvalue);
-            lvalue = make_binop(BINOP_MUL, lvalue, rvalue);
-        }
-        op = current_token();
+    Token *token = lexer->current_token;
+    while(token->type == T_SLASH || token->type == T_STAR) {
+        eat_token(lexer, token->type);
+        lvalue = make_binop(token, lvalue, factor(lexer));
+        token = lexer->current_token;
     }
 
     return lvalue;
 }
 
-Ast *expr() 
+Ast *expr_list(Lexer *lexer)
 {
-    Ast *lvalue = term();
-    ASSERT_ERROR(lvalue);
-    Token *op = current_token();
-    while (op->type == T_PLUS || op->type == T_MINUS) {
-        if (op->type == T_PLUS) {
-            EAT(T_PLUS);
-            Ast *rvalue = term();
-            ASSERT_ERROR(rvalue);
-            lvalue = make_binop(BINOP_ADD, lvalue, rvalue);
-        }
+    eat_token(lexer, T_LPAREN);
+    Token *token = lexer->current_token;
+    if (token->type == T_RPAREN) {
+        eat_token(lexer, T_RPAREN);
+        return empty(lexer);
+    }
 
-        if (op->type == T_MINUS) {
-            EAT(T_MINUS);
-            Ast *rvalue = term();
-            ASSERT_ERROR(rvalue);
-            lvalue = make_binop(BINOP_SUB, lvalue, rvalue);
-        }
+    Token *first = token;
+    Ast *expression = equal(lexer);
+    expression->next = NULL;
+    Ast *tmp = expression;
+    token = lexer->current_token;
+    while (token->type == T_COMMA) {
+        eat_token(lexer, T_COMMA);
+        tmp->next = equal(lexer); 
+        tmp = tmp->next;
+        token = lexer->current_token;
+    }
 
-        op = current_token();
+    eat_token(lexer, T_RPAREN);
+    return make_expr_list(first, expression);
+}
+
+Ast *expr(Lexer *lexer)
+{
+    Ast *lvalue = term(lexer);
+    Token *token = lexer->current_token;
+
+    if (token->type == T_IDENTIFIER && token->next->type == T_LPAREN) {
+        return function_call_expr(lexer);
+    }
+
+    while (token->type == T_PLUS || token->type == T_MINUS) {
+        eat_token(lexer, token->type);
+        lvalue = make_binop(token, lvalue, term(lexer));
+        token = lexer->current_token;
+    }
+
+    return lvalue;
+}
+
+Ast *and(Lexer *lexer) 
+{
+    Ast *lvalue = equal(lexer);
+    Token *token = lexer->current_token;
+
+    while(token->type == T_AND) {
+        eat_token(lexer, T_AND);
+        lvalue = make_logical(token, lvalue, equal(lexer));
+        token = lexer->current_token;
+    }
+
+    return lvalue;
+}
+
+Ast *or(Lexer *lexer)
+{
+    Ast *lvalue = and(lexer);
+    Token *token = lexer->current_token;
+
+    while(token->type == T_OR) {
+        eat_token(lexer, T_OR);
+        lvalue = make_logical(token, lvalue, and(lexer));
+        token = lexer->current_token;
+    }
+
+    return lvalue;
+}
+
+Ast *equal(Lexer *lexer) 
+{
+    Ast *lvalue = expr(lexer);
+    Token *token = lexer->current_token;
+
+    while(token->type == T_OR) {
+        eat_token(lexer, T_OR);
+        lvalue = make_logical(token, lvalue, expr(lexer));
+        token = lexer->current_token;
     }
 
     return lvalue;

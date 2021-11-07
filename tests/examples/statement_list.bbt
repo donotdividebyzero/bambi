@@ -1,5 +1,0 @@
-{
-    const variable_name := 6; // some very awesome comment
-    second_variable := variable_name + 1 + 2;
-    variable_name := second_variable + 4;
-}

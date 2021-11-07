@@ -1,10 +1,8 @@
-#ifndef __INTERPRETER_H
-#define __INTERPRETER_H
+#ifndef __BAMBI_INTERPRETER
+#define __BAMBI_INTERPRETER
 
 #include "vm.h"
-#include "ast.h"
-#include "context.h"
 
-Ast *interpret(RuntimePipe *, Context *, Ast *);
+Ast *interpret(Context *, Ast *);
 
 #endif

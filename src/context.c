@@ -1,52 +1,46 @@
 #include "context.h"
 
-Context *global;
-
-
-Context *make_context(Context *parent, char *ctx_name)
+ContextVariable *context_lookup(Context *ctx, const String *id)
 {
-    Context *context = malloc(sizeof(Context));
-    context->parent = parent;
-    context->ctx_name = malloc(strlen(ctx_name));
-    strncpy(context->ctx_name, ctx_name, strlen(ctx_name));
-    context->size = 0;
+    ContextVariable *variable = ctx->vars;
+    while (variable != NULL)
+    {
+        Variable *var = &variable->var->var;
+        if (string_equal(&var->name, id)) return variable;
+        variable = variable->next;
+    }
 
-    return context;
-}
-
-void free_global_context()
-{
-
-}
-void create_global_context()
-{
-    global = make_context(NULL, "global");
-}
-
-Context *get_global_context()
-{
-    return global;
-}
-
-Context_Variable *find_in_context(Context *ctx, char *id)
-{
-    for(size_t i = 0; i <= ctx->size-1; i++) if (strcmp(ctx->vars[i]->var->var->name, id) == 0) return ctx->vars[i];
     return NULL;
 }
 
-void push_to_context(Context *ctx, Context_Variable *var)
+ContextVariable *find_in_context(Context *ctx, const String *id)
 {
-    if (var) {
-        if (ctx->size == 0) {
-            ctx->vars = (Context_Variable **)malloc(sizeof(Context_Variable) * 5);
-            ctx->vars[0] = var;
-            ctx->size = 1;
+    if (id == NULL || ctx == NULL) {
+        return NULL;
+    }
+    
+    ContextVariable *variable = context_lookup(ctx, id);
+    if (variable) return variable;
+    
+    if (ctx->parent != NULL)
+    {
+        variable = context_lookup(ctx->parent, id);
+        if (variable) return variable;
+    }
+
+    return NULL;
+}
+
+void push_to_context(Context *ctx, ContextVariable *var)
+{
+    if (var != NULL) {
+        var->next = NULL;
+        ContextVariable *stack = ctx->vars;
+        if (stack) {
+            while (stack->next != NULL) stack = stack->next;
+            stack->next = var;
         } else {
-            if (ctx->size % 5 == 1) {
-                ctx->vars = realloc(ctx->vars, sizeof(Context_Variable) * (ctx->size + 5));
-            }
-            ctx->vars[ctx->size] = var;
-            ctx->size = ctx->size + 1;
+            ctx->vars = var;
         }
     }
 }

@@ -1,25 +1,22 @@
-#ifndef __PARSER_H
-#define __PARSER_H
+#ifndef __BAMBI_PARSER
+#define __BAMBI_PARSER
+#include "vm.h"
 
-#include "token.h"
-#include "ast.h"
-
-#define EAT(token) {\
-Tokenizer_Error is_eaten = eat_token(token); \
-    if (is_eaten.error != NULL) {\
-        return make_error(is_eaten.error);\
-    }\
-}\
-
-Ast *factor();
-Ast *term();
-Ast *expr();
-Ast *variable();
-Ast *statement();
-Ast *statement_list();
-Ast *compound_statement();
-Ast *assigment_statement();
-Ast *empty();
-Ast *program();
+Ast *factor(Lexer *);
+Ast *term(Lexer *);
+Ast *expr(Lexer *);
+Ast *expr_list(Lexer *);
+Ast *or(Lexer *);
+Ast *and(Lexer *);
+Ast *_if(Lexer *);
+Ast *equal(Lexer *);
+Ast *variable(Lexer *);
+Ast *statement(Lexer *);
+Ast *statement_list(Lexer *);
+Ast *function_call_expr(Lexer *);
+Ast *compound_statement(Lexer *);
+Ast *assigment(Lexer *);
+Ast *empty(Lexer *);
+Ast *program(Lexer *);
 
 #endif

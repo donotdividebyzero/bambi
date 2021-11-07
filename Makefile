@@ -1,9 +1,10 @@
-PROG := brumbrum
-SRC_DIRS ?= ./src
+PROG := bambi
+SRC_DIRS ?= src
 SRCS := $(shell find $(SRC_DIRS) -name "*.c")
 
-CC      := cc
-CFLAGS  := -Wall -Wextra -Werror -Werror=enum-compare
+CC      := time cc
+DEBUG   := -g
+CFLAGS  := -Wall -Wextra -Werror -Werror=enum-compare $(DEBUG)
 LDFLAGS :=
 
 OBJS   = $(SRCS:.c=.o)
@@ -22,14 +23,7 @@ $(PROG): $(OBJS)
 
 .PHONY: clean cleaner
 clean:
-	rm -f $(OBJS) $(DEPS)
+	rm -f src/$(OBJS) src/$(DEPS)
 
 cleaner: clean
-	rm -rf $(PROG)
-
-check: all
-	./$(PROG) tests
-
-debug: DEBUG = -DDEBUG
-
-debug: $(PROG)
+	rm -rf src/$(PROG)

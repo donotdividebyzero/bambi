@@ -27,4 +27,4 @@ Usage:
   a. [X] - simple expressions
   b. [ ] - variable assigments
   c. [ ] - procedure calls
-4. [X] - Test runner
+4. [] - Test runner

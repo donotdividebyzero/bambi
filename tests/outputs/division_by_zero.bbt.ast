@@ -1,1 +1,0 @@
-(LET)expression := T_FLOAT(5.50000000) DIV T_FLOAT(0.00000000)
