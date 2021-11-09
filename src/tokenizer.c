@@ -15,6 +15,8 @@ void debug_tokenize(Lexer *lexer)
         if (current_line != line) {
             printf("\n");
             current_line = line;
+            int position = token->location.column;
+            while(position--) printf(" ");
         }
         if (token->value.text != NULL) {
             print_token(token);
@@ -56,6 +58,7 @@ TokenKeyword *get_keyword(const String *keyword)
 }
 
 const char *token_type_to_str(enum TokenType type) {
+    if (type == T_RETURN) return "T_RETURN";
     if (type == T_PLUS) return "T_PLUS";
     if (type == T_MINUS) return "T_MINUS";
     if (type == T_LPAREN) return "T_LPAREN";
@@ -236,6 +239,7 @@ void read_identifier(Lexer *lexer)
 
     TokenKeyword *keyword = get_keyword(&keyword_buffer);
     if (keyword) {
+        start = NULL;
         type = keyword->token_type;
     }
     push_token(lexer, type, start, count);

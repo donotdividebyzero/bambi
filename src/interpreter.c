@@ -68,7 +68,7 @@ Ast *interpret_statement_list(Context *ctx, Ast *ast)
     while (stmt)
     {
         Ast *result = interpret(&stack, stmt);
-        if (stmt->type == AT_BREAK || stmt->type == AT_CONTINUE || stmt->type == AT_RETURN) {
+        if (result->type == AT_BREAK || result->type == AT_CONTINUE || result->type == AT_RETURN) {
             drop_stack(&stack);
             return result;
         }
@@ -327,18 +327,14 @@ Ast *interpret_function_call(Context *ctx, Ast *expr)
         exit(EXIT_FAILURE);
     }
 
-    Context fn_ctx;
-    fn_ctx.vars = NULL;
-    fn_ctx.parent = ctx;
-
     if (function->type == F_BUILTIN)
     {
-        return function->bfunc.fp(&fn_ctx, fnCall->args);
+        return function->bfunc.fp(ctx, fnCall->args);
     }
 
     if (function->type == F_USER_DEFINED)
     {
-        return user_defined_function_runner(&fn_ctx, expr, &function->ufunc);
+        return user_defined_function_runner(ctx, expr, &function->ufunc);
     }
 
     return make_empty(expr->token) ;

@@ -47,12 +47,14 @@ ContextVariable *find_in_context(Context *ctx, const String *id)
     if (variable) {
         return variable;
     }
-    
-    if (ctx->parent != NULL) {
-        variable = context_lookup(ctx->parent, id);
-        if (variable) return variable;
-    }
 
+    Context *parent = ctx->parent;
+    while(parent) {
+        variable = context_lookup(parent, id);
+        if (variable) return variable;
+        parent = parent->parent;
+    }
+    
     return NULL;
 }
 

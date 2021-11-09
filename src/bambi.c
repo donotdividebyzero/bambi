@@ -15,6 +15,8 @@ int main(int argc, char** argv)
         .file = &file
     };
     tokenize(&lexer);
+    /* debug_tokenize(&lexer); */
+
     Ast *ast_tree = program(&lexer);
 
     Context global = create_stack(NULL);
