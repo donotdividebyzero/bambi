@@ -1,5 +1,29 @@
 #include "context.h"
 
+void drop_stack(Context *stack)
+{
+    if (stack->vars != NULL) {
+        ContextVariable *var = stack->vars;
+        while (var) {
+            ContextVariable *tmp = var->next;
+            free(var);
+            var = tmp;
+        }
+    }
+}
+
+Context create_stack(Context *parent)
+{
+    Context stack;
+    stack.vars = NULL;
+    if (parent) {
+        stack.parent = parent;
+    } else {
+        stack.parent = NULL;
+    }
+    return stack;
+}
+
 ContextVariable *context_lookup(Context *ctx, const String *id)
 {
     ContextVariable *variable = ctx->vars;
@@ -20,10 +44,11 @@ ContextVariable *find_in_context(Context *ctx, const String *id)
     }
     
     ContextVariable *variable = context_lookup(ctx, id);
-    if (variable) return variable;
+    if (variable) {
+        return variable;
+    }
     
-    if (ctx->parent != NULL)
-    {
+    if (ctx->parent != NULL) {
         variable = context_lookup(ctx->parent, id);
         if (variable) return variable;
     }

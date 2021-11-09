@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include "vm.h"
 
+#define LINES_BUFFER_SIZE 1024
+
 void debug_tokenize(Lexer *lexer)
 {
     Token * token = lexer->tokens;
@@ -153,16 +155,34 @@ char lexer_peek(Lexer *lexer)
     return lexer->file->content[lexer->current+1];
 }
 
+void add_line(Lexer *lexer)
+{
+    int modulo = lexer->file->line % LINES_BUFFER_SIZE;
+    if (modulo == 1) {
+        int new_size = LINES_BUFFER_SIZE * ((lexer->file->line + LINES_BUFFER_SIZE) / LINES_BUFFER_SIZE);
+        if (lexer->file->line == 1) {
+            lexer->file->lines = calloc(0, sizeof(char *) * new_size);
+        } else {
+            lexer->file->lines = realloc(lexer->file->lines, new_size);
+        }
+    }
+    lexer->file->lines[lexer->file->line] = token_start(lexer);
+}
+
 void advance_lexer(Lexer *lexer)
 {
     if (lexer_getc(lexer) == '\n') {
         lexer->file->line++;
         lexer->file->column = 1;
+        lexer->current = lexer->current+1;
+        // add line must occure after checking for new line 
+        // and after incrementing cursor
+        add_line(lexer);
     }
     else {
         lexer->file->column++;
+        lexer->current = lexer->current+1;
     }
-    lexer->current = lexer->current+1;
 }
 
 void read_string(Lexer *lexer)
@@ -303,6 +323,7 @@ void skip_comment(Lexer *lexer)
 
 void tokenize(Lexer *lexer)
 {
+    add_line(lexer);
     char c;
     while((c = lexer_getc(lexer)) != EOF) {
         if (isspace(c)) {

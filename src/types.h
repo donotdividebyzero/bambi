@@ -70,6 +70,7 @@ typedef struct Token Token;
 struct SourceCodeFile {
     const char *file_name;
     const char *content;
+    const char **lines;
     int line;
     int column;
     size_t size;
@@ -128,6 +129,12 @@ struct If {
    struct Ast *condition;
 };
 typedef struct If If;
+
+struct Return 
+{
+    struct Ast *expr;
+};
+typedef struct Return Return;
 
 struct For {
    struct Ast *body;
@@ -201,6 +208,7 @@ typedef struct Ast
     Token *token;
     enum AstType type;
     union {
+        Return _return;
         While _while;
         For _for;
         If _if;

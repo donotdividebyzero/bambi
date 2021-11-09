@@ -88,22 +88,33 @@ void print_token_in_file(Token *token)
 {
     Lexer *lexer = token->lexer;
     SourceCodeFile *file = lexer->file;
-    file->line = 1;
-    file->column = 1;
-    const char *content = file->content;
-    while (content != 0) {
-       const char *line = content;
-       int line_size = 0;
-       while((int)(*content) != '\n')  { 
-           line_size++; 
-           content++; 
-       }
-       file->line++; 
-       if (line_in_token_range(token, file->line)) {
-            fprintf(stderr, "%d | %.*s", file->line, line_size, line);
-       }
-       if ((int)*content == EOF) break;
+    int line_size = 0;
+    const char *line;
+    const char **lines = file->lines;
+    int upper = token->location.line - 5;
+    if (upper <= 0) {
+        upper = 1;
     }
+    int lower = token->location.line + 5;
+    
+    while(true) {
+        line = lines[upper];
+        if (line == NULL) break;
+        for(const char* tmp = line; (int)*tmp != '\n'; line_size++, tmp++);
+        if(upper == token->location.line) {
+            fprintf(stdout, "-> %d | %.*s\n", upper, line_size, line);
+            int position = token->location.column + 6;
+            while(position--) fprintf(stdout, " ");
+            fprintf(stdout, "^\n");
+        } else {
+            fprintf(stdout, "   %d | %.*s\n", upper, line_size, line);
+        }
+        line_size = 0;
+        upper++;
+        if (upper >= lower) break;
+    }
+
+    free(lines);
 }
 
 
@@ -111,12 +122,13 @@ void print_compiler_error(Token *token, const char *message)
 {
     FileLocation location = token->location;
     fprintf(stdout, "\n\033[1;0m%s:%d:%d: \033[1;31merror: \033[0m%s\n", location.file_name, location.line, location.column, message);
-    /* print_token_in_file(token); */
+    print_token_in_file(token);
     cleanup(token->lexer);
 }
 
 void print_compiler_note(Token *token, const char *message)
 {
     FileLocation location = token->location;
-    fprintf(stderr, "\033[1;0m%s:%d:%d: note: \033[0m%s\n", location.file_name, location.line, location.column, message);
+    fprintf(stdout, "\033[1;0m%s:%d:%d: note: \033[0m%s\n\n", location.file_name, location.line, location.column, message);
+    
 }

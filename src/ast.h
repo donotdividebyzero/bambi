@@ -14,6 +14,7 @@ Ast *make_if(Token *, Ast *, Ast *);
 Ast *make_for(Token *, Ast *, Ast *);
 Ast *make_while(Token *, Ast *, Ast *);
 Ast *make_keyword(Token *);
+Ast *make_return(Token *, Ast *);
 Ast *make_binop(Token *, Ast *, Ast *);
 Ast *make_unary(Token *, Ast *);
 Ast *make_empty(Token *);

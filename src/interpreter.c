@@ -1,8 +1,8 @@
 #include "vm.h"
 #include "ast.h"
-#include "context.h"
 #include "functions.h"
 #include "interpreter.h"
+#include "context.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -54,17 +54,29 @@ void add_function(Function *new_function)
     }
 }
 
+Ast *interpret_return(Context *ctx, Ast *ast)
+{
+    Ast *value = interpret(ctx, ast->_return.expr);
+    return make_value(ast->token, &value->value);
+}
+
 Ast *interpret_statement_list(Context *ctx, Ast *ast)
 {
     StatementList *stmtList = &ast->stmt_list;
     Ast *stmt = stmtList->statements;
+    Context stack = create_stack(ctx);
     while (stmt)
     {
-        interpret(ctx, stmt);
+        Ast *result = interpret(&stack, stmt);
+        if (stmt->type == AT_BREAK || stmt->type == AT_CONTINUE || stmt->type == AT_RETURN) {
+            drop_stack(&stack);
+            return result;
+        }
         stmt = stmt->next;
     }
 
-    return NULL;
+    drop_stack(&stack);
+    return make_empty(ast->token);
 }
 
 Ast *interpret_for(Context *ctx, Ast *ast)
@@ -73,22 +85,42 @@ Ast *interpret_for(Context *ctx, Ast *ast)
     (void)ast;
     print_compiler_error(ast->token, "TODO: For loops not implemented!");
     exit(1);
-    return NULL;
+    return make_empty(ast->token);
 }
 
 Ast *interpret_while(Context *ctx, Ast *ast)
 {
     While *_while = &ast->_while;
+    bool broken = false;
 
+    Context stack = create_stack(ctx);
     while(true) {
-        Ast *condition = interpret(ctx, _while->condition);
+        if (broken) break;
+        Ast *condition = interpret(&stack, _while->condition);
         if (is_truthy(&condition->value)) {
-            interpret_statement_list(ctx, _while->body);
+            Ast *body = _while->body->stmt_list.statements;
+            while(body) {
+                Ast *result = interpret(&stack, body);
+                if (result->type == AT_BREAK) {
+                    broken = true;
+                    break;
+                }
+                if (result->type == AT_CONTINUE) {
+                    //we just need to contiune out of current body iteration
+                    break;
+                }
+                if (result->type == AT_RETURN) {
+                    drop_stack(&stack);
+                    return result;
+                }
+                body = body->next;
+            }
         } else {
             break;
         }
     }
 
+    drop_stack(&stack);
     return make_empty(ast->token);
 }
 
@@ -215,7 +247,7 @@ Ast *interpret_assigment(Context *ctx, Ast *ast)
         push_to_context(ctx, ctx_var);
     }
     ctx_var->value = interpret(ctx, assigment->expr);
-    return NULL;
+    return make_empty(ast->token); 
 }
 
 Ast *interpret_variable(Context *ctx, Ast *expr)
@@ -249,9 +281,7 @@ Ast *user_defined_function_runner(Context *ctx, Ast *fn_call, UserDefinedFunctio
         exit(EXIT_FAILURE);
     }
 
-    Context stack;
-    stack.vars = NULL;
-    stack.parent = ctx;
+    Context stack = create_stack(NULL);
     if (fnCall->args->type != AT_EMPTY) {
         size_t argc = fnCall->argc;
         Ast *param = user_fn->parameters->expr_list.exprs;
@@ -266,18 +296,16 @@ Ast *user_defined_function_runner(Context *ctx, Ast *fn_call, UserDefinedFunctio
             arg = arg->next;
         }
     }
-
-    interpret_statement_list(&stack, user_fn->statements);
-    // Drop stack.
-    if (stack.vars != NULL) {
-        ContextVariable *var = stack.vars;
-        while (var) {
-            ContextVariable *tmp = var->next;            
-            free(var);
-            var = tmp;
+    Ast *body = user_fn->statements->stmt_list.statements;
+    while(body) {
+        Ast *result = interpret(&stack, body);
+        if (result->type == AT_RETURN) {
+           return interpret(&stack, result->_return.expr); 
         }
+        body = body->next;
     }
 
+    drop_stack(&stack);
     return make_empty(fn_call->token);
 }
 
@@ -313,7 +341,7 @@ Ast *interpret_function_call(Context *ctx, Ast *expr)
         return user_defined_function_runner(&fn_ctx, expr, &function->ufunc);
     }
 
-    return NULL;
+    return make_empty(expr->token) ;
 }
 
 Ast *interpret_function_definition(Context *ctx, Ast *ast)
@@ -330,7 +358,7 @@ Ast *interpret_function_definition(Context *ctx, Ast *ast)
     };
 
     add_function(fun);
-    return NULL;
+    return make_empty(ast->token);
 }
 
 Ast *interpret_logical(Context *ctx, Ast *ast)
@@ -389,6 +417,9 @@ Ast *interpret_logical(Context *ctx, Ast *ast)
 
 Ast *interpret(Context *ctx, Ast *ast)
 {
+    if (ast->type == AT_RETURN) return interpret_return(ctx, ast);
+    if (ast->type == AT_BREAK) return ast;
+    if (ast->type == AT_CONTINUE) return ast;
     if (ast->type == AT_WHILE) return interpret_while(ctx, ast);
     if (ast->type == AT_FOR) return interpret_for(ctx, ast);
     if (ast->type == AT_IF) return interpret_if(ctx, ast);

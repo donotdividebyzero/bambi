@@ -1,6 +1,16 @@
 #include "ast.h"
 #include <string.h>
 
+Ast *make_return(Token *token, Ast *ast)
+{
+    Ast *node = malloc(sizeof(Ast));
+    node->token = token;
+    node->type = AT_RETURN;
+    node->_return = (Return){ast};
+
+    return node;
+}
+
 Ast *make_keyword(Token *token)
 {
     Ast *node = malloc(sizeof(Ast));
@@ -10,9 +20,6 @@ Ast *make_keyword(Token *token)
     }
     if (token->type == T_CONTINUE) {
         node->type = AT_CONTINUE;
-    }
-    if (token->type == T_RETURN) {
-        node->type = AT_RETURN;
     }
 
     return node;

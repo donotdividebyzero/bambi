@@ -48,7 +48,8 @@ bool dont_need_semicolon(enum AstType type)
 {
     return type == AT_FN_DEFINITION || 
         type == AT_IF ||
-        type == AT_WHILE;
+        type == AT_WHILE ||
+        type == AT_FOR;
 }
 
 Ast *statement_list(Lexer *lexer)
@@ -77,14 +78,14 @@ Ast *_while(Lexer *lexer)
 {
     Token *token = lexer->current_token;
     eat_token(lexer, T_WHILE);
-    return make_while(token, equal(lexer), compound_statement(lexer));
+    return make_while(token, or(lexer), compound_statement(lexer));
 }
 
 Ast *_for(Lexer *lexer)
 {
     Token *token = lexer->current_token;
     eat_token(lexer, T_FOR);
-    return make_for(token, equal(lexer), compound_statement(lexer));
+    return make_for(token, or(lexer), compound_statement(lexer));
 }
 
 Ast *_if(Lexer *lexer)
@@ -92,7 +93,7 @@ Ast *_if(Lexer *lexer)
     Token *token = lexer->current_token;
     eat_token(lexer, T_IF);
 
-    return make_if(token, equal(lexer), compound_statement(lexer));
+    return make_if(token, or(lexer), compound_statement(lexer));
 }
 
 Ast *function_call_expr(Lexer *lexer)
@@ -142,15 +143,30 @@ Ast *statement(Lexer *lexer)
         return _while(lexer);
     }
 
+    if (token->type == T_RETURN) {
+        eat_token(lexer, T_RETURN);
+        return make_return(token, or(lexer));
+    }
+
+    if (token->type == T_BREAK) {
+        eat_token(lexer, T_BREAK);
+        return make_keyword(token);    
+    }
+
+    if (token->type == T_CONTINUE) {
+        eat_token(lexer, T_CONTINUE);
+        return make_keyword(token);
+    }
+
     return empty(lexer);
 }
 
 Ast *assigment(Lexer *lexer)
 {
     Ast *var = variable(lexer);
-    Token *assigment = lexer->current_token;
+    Token *token = lexer->current_token;
     eat_token(lexer, T_ASSIGN);
-    return make_assigment(assigment, var, equal(lexer));
+    return make_assigment(token, var, or(lexer));
 }
 
 Ast *compound_statement(Lexer *lexer)
@@ -183,6 +199,10 @@ Ast *empty(Lexer *lexer)
 Ast *factor(Lexer *lexer)
 {
     Token *token = lexer->current_token;
+
+    if (token->type == T_IDENTIFIER && token->next->type == T_LPAREN) {
+        return function_call_expr(lexer);
+    }
 
     if (token->type == T_PLUS) {
         eat_token(lexer, T_PLUS);
@@ -234,21 +254,9 @@ Ast *factor(Lexer *lexer)
 
     if (token->type == T_LPAREN) {
         eat_token(lexer, T_LPAREN);
-        Ast *in_expr = equal(lexer);
+        Ast *in_expr = or(lexer);
         eat_token(lexer, T_RPAREN);
         return in_expr;
-    }
-
-    if (token->type == T_RETURN) {
-        return make_keyword(token);
-    }
-
-    if (token->type == T_BREAK) {
-        return make_keyword(token);    
-    }
-
-    if (token->type == T_CONTINUE) {
-        return make_keyword(token);
     }
 
     return variable(lexer);
@@ -277,13 +285,13 @@ Ast *expr_list(Lexer *lexer)
     }
 
     Token *first = token;
-    Ast *expression = equal(lexer);
+    Ast *expression = or(lexer);
     expression->next = NULL;
     Ast *tmp = expression;
     token = lexer->current_token;
     while (token->type == T_COMMA) {
         eat_token(lexer, T_COMMA);
-        tmp->next = equal(lexer); 
+        tmp->next = or(lexer); 
         tmp = tmp->next;
         token = lexer->current_token;
     }
@@ -296,10 +304,6 @@ Ast *expr(Lexer *lexer)
 {
     Ast *lvalue = term(lexer);
     Token *token = lexer->current_token;
-
-    if (token->type == T_IDENTIFIER && token->next->type == T_LPAREN) {
-        return function_call_expr(lexer);
-    }
 
     while (token->type == T_PLUS || token->type == T_MINUS) {
         eat_token(lexer, token->type);
