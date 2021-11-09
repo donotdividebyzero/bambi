@@ -1,5 +1,6 @@
 #include "vm.h"
 #include <stdio.h>
+#include <string.h>
 
 bool is_truthy(Value *val)
 {
@@ -99,11 +100,11 @@ void print_token_in_file(Token *token)
     
     while(true) {
         line = lines[upper];
-        if (line == NULL) break;
+        if (line == NULL || strcmp(line, "") == 0) break;
         for(const char* tmp = line; (int)*tmp != '\n'; line_size++, tmp++);
         if(upper == token->location.line) {
             fprintf(stdout, "-> %d | %.*s\n", upper, line_size, line);
-            int position = token->location.column + 6;
+            int position = token->location.column + 7;
             while(position--) fprintf(stdout, " ");
             fprintf(stdout, "^\n");
         } else {

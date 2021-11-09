@@ -27,6 +27,7 @@ void debug_tokenize(Lexer *lexer)
         printf(" ");
         token = token->next;
     }
+    printf("\n");
 }
 
 TokenKeyword keywords[] = {

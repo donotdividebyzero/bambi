@@ -54,12 +54,6 @@ void add_function(Function *new_function)
     }
 }
 
-Ast *interpret_return(Context *ctx, Ast *ast)
-{
-    Ast *value = interpret(ctx, ast->_return.expr);
-    return make_value(ast->token, &value->value);
-}
-
 Ast *interpret_statement_list(Context *ctx, Ast *ast)
 {
     StatementList *stmtList = &ast->stmt_list;
@@ -300,7 +294,7 @@ Ast *user_defined_function_runner(Context *ctx, Ast *fn_call, UserDefinedFunctio
     while(body) {
         Ast *result = interpret(&stack, body);
         if (result->type == AT_RETURN) {
-           return interpret(&stack, result->_return.expr); 
+            return interpret(&stack, result->_return.expr);
         }
         body = body->next;
     }
@@ -413,7 +407,7 @@ Ast *interpret_logical(Context *ctx, Ast *ast)
 
 Ast *interpret(Context *ctx, Ast *ast)
 {
-    if (ast->type == AT_RETURN) return interpret_return(ctx, ast);
+    if (ast->type == AT_RETURN) return ast;
     if (ast->type == AT_BREAK) return ast;
     if (ast->type == AT_CONTINUE) return ast;
     if (ast->type == AT_WHILE) return interpret_while(ctx, ast);
