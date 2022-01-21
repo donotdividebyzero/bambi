@@ -259,6 +259,10 @@ Ast *factor(Lexer *lexer)
         return in_expr;
     }
 
+    /* if (token->type == T_IDENTIFIER && token->next->type == T_COLON) { */
+    /*     return make_argument(token); */
+    /* } */
+
     return variable(lexer);
 }
 

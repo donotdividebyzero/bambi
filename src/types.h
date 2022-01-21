@@ -136,6 +136,14 @@ struct Return
 };
 typedef struct Return Return;
 
+struct Argument {
+    struct Ast *name;
+    enum ValueType type;
+    String *typeIdentifier;
+};
+
+typedef struct Argument Argument;
+
 struct For {
    struct Ast *body;
    struct Ast *condition;
@@ -248,6 +256,7 @@ struct BuiltInFunction {
 typedef struct BuiltInFunction BuiltInFunction;
 
 struct UserDefinedFunction {
+    Token *token;
     size_t argc;
     Ast *parameters;
     Ast *statements;

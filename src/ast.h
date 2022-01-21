@@ -2,6 +2,7 @@
 #define __BAMBI_AST
 #include "types.h"
 
+Ast *make_argument(Token *, Ast *, Ast *);
 Ast *make_function_definition(Token *, Ast *, Ast *);
 Ast *make_function_call(Token *, Ast*);
 Ast *make_statement_list(Token *, Ast *, Ast *);

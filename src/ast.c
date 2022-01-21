@@ -1,6 +1,14 @@
 #include "ast.h"
 #include <string.h>
 
+Ast *make_argument(Token *token, Ast *name, Ast *type)
+{
+    (void)token;
+    (void)name;
+    (void)type;
+    return NULL;
+}
+
 Ast *make_return(Token *token, Ast *ast)
 {
     Ast *node = malloc(sizeof(Ast));
@@ -190,10 +198,11 @@ Ast *make_function_call(Token *token, Ast *args)
    return node;
 }
 
-Ast *make_function_definition(Token *definition_token, Ast *args, Ast *statements)
+Ast *make_function_definition(Token *token, Ast *args, Ast *statements)
 {
     Ast *node = malloc(sizeof(Ast));
     node->type = AT_FN_DEFINITION;
+    node->token = token;
     size_t argc = 0;
     if (args->type != AT_EMPTY) {
         Ast *arg = args->expr_list.exprs;
@@ -204,7 +213,7 @@ Ast *make_function_definition(Token *definition_token, Ast *args, Ast *statement
     }
 
     node->function_definition = (FunctionDefinition) {
-        .name = &definition_token->value,
+        .name = &token->value,
         .parameters = args,
         .argc = argc,
         .statementList = statements

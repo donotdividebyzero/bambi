@@ -50,6 +50,7 @@ void cleanup(Lexer *lexer)
 {
     Token *token = lexer->tokens;
 
+    free((void*)lexer->file->lines);
     free((void*)lexer->file->content);
     while(token) {
         Token *tmp = token->next;
@@ -93,10 +94,10 @@ void print_token_in_file(Token *token)
     const char *line;
     const char **lines = file->lines;
     int upper = token->location.line - 5;
+    int lower = token->location.line + 5;
     if (upper <= 0) {
         upper = 1;
     }
-    int lower = token->location.line + 5;
     
     while(true) {
         line = lines[upper];
@@ -106,16 +107,14 @@ void print_token_in_file(Token *token)
             fprintf(stdout, "-> %d | %.*s\n", upper, line_size, line);
             int position = token->location.column + 7;
             while(position--) fprintf(stdout, " ");
-            fprintf(stdout, "^\n");
+            fprintf(stdout, "^~~~~\n");
         } else {
             fprintf(stdout, "   %d | %.*s\n", upper, line_size, line);
         }
         line_size = 0;
         upper++;
-        if (upper >= lower) break;
+        if (upper > lower) break;
     }
-
-    free(lines);
 }
 
 
@@ -132,4 +131,5 @@ void print_compiler_note(Token *token, const char *message)
     FileLocation location = token->location;
     fprintf(stdout, "\033[1;0m%s:%d:%d: note: \033[0m%s\n\n", location.file_name, location.line, location.column, message);
     
+    print_token_in_file(token);
 }

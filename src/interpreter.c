@@ -271,6 +271,7 @@ Ast *user_defined_function_runner(Context *ctx, Ast *fn_call, UserDefinedFunctio
     FunctionCall *fnCall = &fn_call->function_call;
     if (fnCall->argc != user_fn->argc)
     {
+        print_compiler_note(user_fn->token, "Function definition is:");
         print_compiler_error(fn_call->token, "Argument count do not match!");
         exit(EXIT_FAILURE);
     }
@@ -331,7 +332,7 @@ Ast *interpret_function_call(Context *ctx, Ast *expr)
         return user_defined_function_runner(ctx, expr, &function->ufunc);
     }
 
-    return make_empty(expr->token) ;
+    return make_empty(expr->token);
 }
 
 Ast *interpret_function_definition(Context *ctx, Ast *ast)
@@ -342,6 +343,7 @@ Ast *interpret_function_definition(Context *ctx, Ast *ast)
     fun->type = F_USER_DEFINED;
     fun->name = *fn_def->name;
     fun->ufunc = (UserDefinedFunction){
+        .token = ast->token,
         .parameters = fn_def->parameters,
         .statements = fn_def->statementList,
         .argc = fn_def->argc
